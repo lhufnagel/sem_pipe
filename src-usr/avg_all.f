@@ -842,8 +842,7 @@ c-----------------------------------------------------------------------
       do n=1,nstat
       do e=1,nelv
         eg = lglel(e)
-        ex = mod(eg-1,nelyz)+1 ! do modulo+1, otherwise last element will
-      !  access index 0.... stupid 
+        ex = mod(eg-1,nelyz)+1 ! avoid to access element 0 ..
 
         ! (+- floating precision)
         if (abs(x_val - xm1(1,1,1,e)) .lt. 1.e-14) then
