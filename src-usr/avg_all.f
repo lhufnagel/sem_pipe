@@ -405,8 +405,8 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         endif
         enddo
 
-c       deallocate(stat_yz)
-c       deallocate(w1)
+        deallocate(stat_yz)
+        deallocate(w1)
 
         nrec = 0
         times = time
