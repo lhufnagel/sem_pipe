@@ -1,0 +1,220 @@
+c-----------------------------------------------------------------------
+c     Turbulent pipe flow 
+c     Along (positive) x-direction
+c     
+c     Turbulence at inlet is "generated" with synthetic eddy method 
+c     JARRIN, Nicolas, et al. A synthetic-eddy-method for
+c     generating inflow conditions for large-eddy simulations. International
+c     Journal of Heat and Fluid Flow, 2006, 27. Jg., Nr. 4, S. 585-593.
+c
+c     Lorenz Hufnagel, hufnagel@kth.se
+c-----------------------------------------------------------------------
+
+      subroutine uservp (ix,iy,iz,ieg)
+      return
+      end
+
+c-----------------------------------------------------------------------
+
+      subroutine userf  (ix,iy,iz,ieg)
+
+      implicit none
+
+      include 'SIZE_DEF'
+      include 'SIZE'  ! L[XYZ]1,LELV,LPX1,LPY1,LPZ1,NID
+      include 'SOLN_DEF'
+      include 'SOLN'  ! V[XYZ]
+      include 'NEKUSE_DEF'
+      include 'NEKUSE'! FF[XYZ]
+      include 'PARALLEL_DEF'
+      include 'PARALLEL' ! GLLEL
+
+      integer, intent(in) :: ix,iy,iz,ieg
+
+      ! No forcing
+      ffx = 0
+      ffy = 0
+      ffz = 0
+
+      end
+
+c-----------------------------------------------------------------------
+
+      subroutine userq  (ix,iy,iz,ieg)
+      return
+      end
+
+c-----------------------------------------------------------------------
+
+      subroutine userchk
+      implicit none
+
+      include 'SIZE_DEF'
+      include 'SIZE'  ! L[XYZ]1,LELV,NID
+      include 'TSTEP_DEF'
+      include 'TSTEP' ! ISTEP,IOSTEP
+      include 'SOLN_DEF'
+      include 'SOLN'  ! V[XYZ],V[XYZ]P
+
+      ! SEM
+      call synthetic_eddies
+
+      ! Compute lambda_2 (stored in temperature field)
+      if (mod(ISTEP,IOSTEP).eq.0.and. istep.gt.0) then
+         if (NID.eq.0) write(6,*) ISTEP,IOSTEP,TIME,' compute lambda2'
+         call lambda2(t(1,1,1,1,1))
+      endif
+
+      ! Statistics. Start recording at least 
+      ! after initial synthetic eddies have left pipe
+      ! (L/umean)/dt plus tolerance for smaller dt
+
+      ! 4800 steps = 2x flow-throughs 
+      if(istep.gt.5000) call avg_stat_all
+
+      ! Restart, NOT TESTED
+      ! call checkpoint
+
+      end
+
+c-----------------------------------------------------------------------
+
+      subroutine userbc (ix,iy,iz,iside,ieg)
+c     NOTE ::: This subroutine MAY NOT be called by every process
+        use SEM, only: u_sem, v_sem, w_sem
+
+      implicit none
+
+      include 'SIZE_DEF'
+      include 'SIZE'  ! L[XYZ]1,LELV
+      include 'PARALLEL_DEF'
+      include 'PARALLEL'  ! GLLEL
+      include 'INPUT_DEF'
+      include 'INPUT'  ! IF3D
+      include 'NEKUSE_DEF'
+      include 'NEKUSE'! U[XYZ],PA,TEMP,CBU
+
+      integer, intent(in) :: ix,iy,iz,iside,ieg
+      integer iel
+
+      real U0delta,S0 ! Dong parameters
+      
+c     Dong outflow boundary condition
+      pa =0
+      U0delta = 1.
+
+      if (cbu.eq.'o  ') then
+
+c     The current definition assumes that the normal velocity
+c     is ux, i.e. the boundary is orthogonal to x, and the outflow
+c     direction is in postive x.
+         S0  = 0.5*(1-tanh(ux/U0delta))
+
+         if (IF3D) then
+            pa = -0.5*(ux*ux+uy*uy+uz*uz)*S0
+         else
+            pa = -0.5*(ux*ux+uy*uy)*S0
+         endif
+         
+      endif
+
+c     SEM inflow
+
+      iel=gllel(ieg)
+      ux=u_sem(ix,iy,iz,iel)
+      uy=v_sem(ix,iy,iz,iel)
+      uz=w_sem(ix,iy,iz,iel)
+         
+      temp = 0.0d0
+
+      end
+
+c-----------------------------------------------------------------------
+
+      subroutine useric (ix,iy,iz,ieg)
+
+      implicit none
+
+      include 'SIZE_DEF'
+      include 'SIZE'  ! L[XYZ]1,LELV
+      include 'NEKUSE_DEF'
+      include 'NEKUSE'! U[XYZ], [XYZ]
+
+      integer, intent(in) :: ix,iy,iz,ieg
+
+      real vel, tke, dissip, radius
+
+      radius = sqrt(y**2. + z**2.)
+      call SEMinputData(radius, vel, tke, dissip )
+
+c     Simply prescribe mean inflow profile used by SEM as IC
+      Ux = vel
+      Uy = 0.
+      Uz = 0.
+
+      return
+      end
+
+c-----------------------------------------------------------------------
+
+      subroutine usrdat
+      use SEM, only: xbmin, xbmax, ybmin, ybmax, zbmin, zbmax, Vb,
+     &   bbox_max, sigma_max, sigma_min, x_inlet
+      implicit none
+      real, external :: glmin, glmax ! defined in math.f
+
+      include 'SIZE_DEF'
+      include 'SIZE' ! nelv
+      include 'INPUT_DEF' 
+      include 'INPUT' ! [xyz]c
+
+      real, parameter :: pi = 3.14159265359
+      real ymin, ymax, zmin, zmax
+      integer n
+
+!     to read user module parameters
+      call uprm_read
+
+c     Initialize SEM
+
+      call SEMinit
+
+c     Initialize SEM variables
+      n = 8*nelv
+
+      x_inlet  = glmin(zc,n)
+      ymin = glmin(yc,n)
+      ymax = glmax(yc,n)
+      zmin = glmin(xc,n)
+      zmax = glmax(xc,n)
+      
+      ! The bounding "box" (more precisely a cylinder for the pipe)
+      ! is just large enough to contain the compact support of all
+      ! eddies. 
+      xbmin = x_inlet - .5*sigma_max
+      xbmax = x_inlet + .5*sigma_max
+      ybmin = ymin - max(bbox_max, sigma_min)
+      ybmax = ymax + max(bbox_max, sigma_min)
+      zbmin = zmin - max(bbox_max, sigma_min)
+      zbmax = zmax + max(bbox_max, sigma_min)
+      Vb = (xbmax-xbmin)*ybmax**2*PI
+c     Vb = (xbmax-xbmin)*(ybmax-ybmin)*(zbmax-zbmin)
+
+      if (nid.eq.0) write(*,*) 'Geom:', x_inlet,ybmin,ybmax,zbmin,zbmax
+
+      return
+      end
+
+c-----------------------------------------------------------------------
+
+      subroutine usrdat2
+      return
+      end
+
+c-----------------------------------------------------------------------
+
+      subroutine usrdat3
+      return
+      end
+
+c------------------------------------------------------------------------

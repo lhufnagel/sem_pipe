@@ -1,0 +1,13 @@
+&USERPAR
+ /
+&CHKPOINT
+ CHKPTSTEP= 10,
+ IFCHKPTRST=F,
+ /
+&SEM
+ neddy=5000,
+ sigma_max=0.27486,
+ sigma_min=0.01,
+ bbox_max=0.056101,
+ u0=1.0,
+ /
