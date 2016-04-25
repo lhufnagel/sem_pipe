@@ -4,9 +4,19 @@ C -------------- AVG'ing routines by AZAD   ---------------------------- C
 C -------------- quickly copied by Lorenz, added extract X-Slice ------- C
 C ---------------------------------------------------------------------- C
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
+      module AVG
+         implicit none
+         save
+
+         integer             :: nslices ! number of slices
+         integer             :: nElperFace ! number of elements per face
+         real , allocatable  :: xslices(:)
+      end module AVG
+
 C=======================================================================
 
       subroutine avg_stat_all
+        use AVG
         implicit none
 
       include 'SIZE_DEF'
@@ -37,7 +47,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
       integer nstat, nstat_extra, iastep, i, j, k,m, ierr
-      integer my, mz, ntot, ntot_2d
+      integer my, mz, ntot
       parameter (nstat = 71) ! Number of statistical fields to be saved
       parameter (nstat_extra = 9) !('new 9 terms for curved pipe due to flatness')
 
@@ -78,12 +88,7 @@ C ---------------------------------------------------------------------- C
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
 !     real stat_yz(ly1*lely*lz1*lelz, nstat)
-      real stat_yz(ly1*lz1*nelxy, nstat)
-      real w1(ly1,lz1,lely,lelz), w2(ly1,lz1,lely,lelz)
-
-      integer nslices 
-      PARAMETER (nslices=5)                   
-      REAL xslices(nslices)
+      real , allocatable :: stat_yz(:, :), w1(:)
 
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
@@ -106,19 +111,12 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
+
       nelx = 1       ! Number of elements in x,y, and z directions. ! TODO TRY AND MAKE THIS SMARTER
-      nely = nelxy   ! NOTE, this may vary from one mesh to the next.
+      nely = nElperFace ! NOTE, this may vary from one mesh to the next.
       nelz = 1       !
 
-      ! x-values to extract, must be mesh aligned
-      xslices(1) =0.
-      xslices(2) =1.
-      xslices(3) =2.
-      xslices(4) =0.5
-      xslices(5) =1.5
-
       ntot    = nx1*ny1*nz1*nelv
-      ntot_2d = nelz*nz1*nely*ny1
 
       if (icalld.eq.0) then
         icalld = icalld + 1
@@ -151,8 +149,10 @@ c        call invers2(jacmi,jacm1,ntot)
           return
         endif
         if (nelxy.gt.lely*lelz) call exitti
-     $  ('ABORT IN extract_x_slice. Increase lely*lelz in SIZE:$',nelxy)
+     $  ('ABORT IN avg_stat_all. Increase lely*lelz in SIZE:$',nelxy)
 
+
+        ifverbose = .FALSE.
       endif
 
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
@@ -323,12 +323,15 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       if(nid.eq.0.and.istep.eq.1) indts = 0
 
       if (mod(istep,iastep).eq.0.and.istep.ge.1) then
+
+        allocate(stat_yz(ly1*lz1*nElperFace, nstat))
+        allocate(w1(ly1*lz1*nElperFace))
         
         if(nid.eq.0)  indts = indts + 1
 
         do k=1,nslices
 
-        call extract_x_slice(xslices(k), stat_yz, nelxy, stat,
+        call extract_x_slice(xslices(k), stat_yz, nElperFace, stat,
      $    nstat,w1) 
         
         if(nid.eq.0) then
@@ -340,7 +343,8 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         write(pippo,'(F4.1, A, i4.4)') xslices(k), '_',  indts
 
-        inputname1 = 'stat/ZSTAT/stat_x_'//adjustl(trim(pippo))
+        inputname1 = 'statistics/recordings/stat_x_'//
+     $    adjustl(trim(pippo))
 
         write(6,*) inputname1
 
@@ -401,6 +405,9 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         endif
         enddo
 
+c       deallocate(stat_yz)
+c       deallocate(w1)
+
         nrec = 0
         times = time
         atime = 0.
@@ -414,6 +421,76 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
+c-----------------------------------------------------------------------
+
+!     read parameters AVG
+      subroutine AVG_param_in(fid)
+        use AVG
+      implicit none
+
+      include 'SIZE_DEF'
+      include 'SIZE'            !
+      include 'PARALLEL_DEF' 
+      include 'PARALLEL'        ! ISIZE, WDSIZE, LSIZE,CSIZE
+
+!     argument list
+      integer fid               ! file id
+
+!     local variables
+      integer ierr
+
+!     namelists
+      namelist /AVG_LIST/ nSlices, nElperFace, xslices
+
+!-----------------------------------------------------------------------
+!     default values
+      nSlices = 5
+      allocate(xslices(nslices))
+      nelperface = 256
+      xslices = (/0.,1.,2.,5.,10./)
+!     read the file
+      ierr=0
+      if (NID.eq.0) then
+         read(unit=fid,nml=AVG_list,iostat=ierr)
+      endif
+      call err_chk(ierr,'Error reading AVG parameters.$')
+
+!     broadcast data
+      call bcast(nSlices,ISIZE)
+      call bcast(nelperface,ISIZE)
+      call bcast(xslices, nSlices*WDSIZE)
+
+      return
+      end  subroutine AVG_param_in
+
+      subroutine AVG_param_out(fid)
+        use AVG
+      implicit none
+
+      include 'SIZE_DEF'
+      include 'SIZE'            !
+      include 'PARALLEL_DEF' 
+      include 'PARALLEL'        ! ISIZE, WDSIZE, LSIZE,CSIZE
+
+!     argument list
+      integer fid               ! file id
+
+!     local variables
+      integer ierr
+
+!     namelists
+      namelist /AVG_LIST/ nSlices, nElperFace, xslices
+!-----------------------------------------------------------------------
+      ierr=0
+      if (NID.eq.0) then
+         write(unit=fid,nml=AVG_list,iostat=ierr)
+      endif
+      call err_chk(ierr,'Error writing AVG parameters.$')
+
+      return
+      end subroutine AVG_param_out
+!***********************************************************************
+
       subroutine avg4(avg,f,g,alpha,beta,n,name)
 c     subroutine avg4(avg,f,g,alpha,beta,n,name,ifverbose)
         implicit none
@@ -421,7 +498,7 @@ c     subroutine avg4(avg,f,g,alpha,beta,n,name,ifverbose)
       real,intent(inout) ::  avg(n)
       real, intent(in) :: alpha, beta, f(n),g(n)
       integer, intent(in) :: n
-      character*4,intent(in) :: name
+      character*2,intent(in) :: name
       integer k
 c     logical ifverbose
 
@@ -597,7 +674,7 @@ c----------------------------------------------------------------------
         real,intent(inout) ::  avg(n)
         real, intent(in) :: alpha, beta, f(n), g(n), h(n)
         integer, intent(in) :: n
-        character*4,intent(in) :: name
+        character*3,intent(in) :: name
         integer k
 
         do k=1,n
@@ -754,10 +831,10 @@ c-----------------------------------------------------------------------
       include 'PARALLEL_DEF'
       include 'PARALLEL'
 
-      real, intent(in) :: x_val, stat3d(lx1,ly1,lz1, lelv,nstat)
-      real, intent(inout) ::  w1(ly1*lz1*nelyz)
-      real, intent(out) :: stat_yz(ly1,lz1,nelyz, nstat)
       integer, intent(in) :: nelyz, nstat
+      real, intent(in) :: x_val, stat3d(lx1,ly1,lz1, lelv,nstat)
+      real, intent(out) ::  w1(ly1*lz1*nelyz)
+      real, intent(out) :: stat_yz(ly1,lz1,nelyz, nstat)
       integer e,eg,ex,n, j, k
 
       call rzero(stat_yz,lz1*ly1*nelyz*nstat)
@@ -765,18 +842,19 @@ c-----------------------------------------------------------------------
       do n=1,nstat
       do e=1,nelv
         eg = lglel(e)
-        ex = mod(eg,nelyz)
+        ex = mod(eg-1,nelyz)+1 ! do modulo+1, otherwise last element will
+      !  access index 0.... stupid 
 
         ! (+- floating precision)
         if (abs(x_val - xm1(1,1,1,e)) .lt. 1.e-14) then
-          do k=1,nz1
-          do j=1,ny1
+          do j=1,ly1
+          do k=1,lz1
             stat_yz(k,j,ex,n) = stat3d(k,j,1,e,n)
           enddo
           enddo
         endif
       enddo
-      call gop(stat_yz(1,1,1,n),w1,'+  ', nelyz*ny1*nz1)
+      call gop(stat_yz(1,1,1,n),w1,'+  ', nelyz*ly1*lz1)
       enddo
 
       return

@@ -78,6 +78,10 @@
 !     SEM
       call sem_param_in(iunit)
 
+      rewind(iunit)
+!     Statistics
+      call avg_param_in(iunit)
+
       return
       end
 !***********************************************************************
@@ -96,8 +100,11 @@
 !     restart
       call chkpt_param_out(iunit)
 
-!     Statistics
+!     SEM
       call sem_param_out(iunit)
+
+!     Statistics
+      call avg_param_out(iunit)
 
       return
       end

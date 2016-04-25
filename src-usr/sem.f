@@ -22,7 +22,6 @@ C
          implicit none
          save
 
-         ! TODO read this from upar
          integer             :: nEddy ! number of eddies 
          real                :: sigma_min 
          ! lower eddy size bound  (due to mesh, usually)
@@ -32,7 +31,6 @@ C
          ! maximum extent of eddies (radial direction here)
          real                :: u0 ! bulk velocity
 
-         real                :: x_inlet ! x value of inlet plane
          
          character*80 infile
          parameter (infile='sem_input.txt')
@@ -40,10 +38,17 @@ C
          ! extent, Volume of the virtual SEM domain
          real                :: ybmin,ybmax,zbmin,zbmax,xbmin,xbmax 
          real                :: Vb
+         real                :: x_inlet ! x value of inlet plane
 
+         ! Actual prescribed velocity field 
+         ! (relevant elements, are extracted via 'v  ' bc)
          real , allocatable  :: u_sem(:,:,:,:)
          real , allocatable  :: v_sem(:,:,:,:)
          real , allocatable  :: w_sem(:,:,:,:)
+
+         ! Individual eddy energies
+         real, allocatable   :: ex(:),ey(:),ez(:),eps(:,:)
+         integer, allocatable :: eddy_pt(:)
          
          integer             :: nInputdata
          real   ,allocatable :: pos(:),umean(:),tke(:),dissip(:)
@@ -77,14 +82,9 @@ c
 c
 c     Read infile
       
-c     TODO read in on NID0 and distribute
-
       fid = 35
       open(unit=fid,file=infile,form='formatted')
       
-      umean(:) = 0.0; tke(:) = 0.0
-      pos(:) = 0.0;   dissip(:) = 0.0
-
       read(fid,*)      ! skip header
       read(fid,*) nlines
 
@@ -99,13 +99,19 @@ c     TODO read in on NID0 and distribute
         read(fid,*) pos(i), umean(i), 
      &              tke(i), dissip(i)
       enddo
+      close(fid)
+
 
       allocate(u_sem(lx1,ly1,lz1,lelv))
       allocate(v_sem(lx1,ly1,lz1,lelv))
       allocate(w_sem(lx1,ly1,lz1,lelv))
 
 
-      close(fid)
+      allocate(ex(neddy))
+      allocate(ey(neddy))
+      allocate(ez(neddy))
+      allocate(eps(3,neddy))
+      allocate(eddy_pt(neddy))
 
       end subroutine SEMinit
 
@@ -199,9 +205,9 @@ c     include 'SYNTHEDDY'
      &           rr, rrx,rry,rrz
 
 
-      real ex(neddy),ey(neddy),ez(neddy),eps(3,neddy)
-      integer eddy_pt(neddy), clock,
-     &        neddy_gl,neddy_ll
+      integer clock
+      integer neddy_ll
+      save    neddy_ll
 
       real wk_e(neddy*3)
       integer i,i_l,ne,nv,iseed
@@ -220,7 +226,6 @@ c --- generate initial eddy distribution ----
           call  ZBQLINI(iseed)
 
           call distribute_eddy(neddy,neddy_ll,eddy_pt)
-          neddy_gl = neddy
 c     Generate local eddies with locations ex,ey,ez
           do i=1,neddy_ll
               i_l = eddy_pt(i)
@@ -236,10 +241,10 @@ c     zeroing eddies off this proc
 c     Gather eddies on each processor
 c     possibly replace with glvadd
 
-      call gop(ex,wk_e,'+  ',neddy_gl) ! inplace!
-      call gop(ey,wk_e,'+  ',neddy_gl)
-      call gop(ez,wk_e,'+  ',neddy_gl)
-      call gop(eps,wk_e,'+  ',neddy_gl*3)
+      call gop(ex,wk_e,'+  ',neddy) ! inplace!
+      call gop(ey,wk_e,'+  ',neddy)
+      call gop(ez,wk_e,'+  ',neddy)
+      call gop(eps,wk_e,'+  ',neddy*3)
 
 c ---- compute velocity contribution of eddies ------
 
@@ -303,7 +308,7 @@ c     pt    - local pointer
       include 'PARALLEL'
 
       integer, intent(in) :: neddy
-      integer, intent(out) :: nl, pt(1)
+      integer, intent(out) :: nl, pt(neddy)
       integer i, nbatch0,nbatch1,ibnd,istart
 
       nbatch0 = neddy/np + 1
