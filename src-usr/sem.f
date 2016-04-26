@@ -72,6 +72,7 @@ c-----------------------------------------------------------------------
 
       subroutine SEMinit()
       use SEM
+      use AVG, only: nElperFace
       implicit none
 
       include 'SIZE_DEF'
@@ -89,6 +90,9 @@ c-----------------------------------------------------------------------
 
       if (nElInlet.gt.lely*lelz) call exitti
      $  ('ABORT IN SEMinit. Increase lely*lelz in SIZE:$',nElInlet)
+
+      if (nElInlet.ne.nElperFace) call exitti
+     $('ABORT For pipe flow, you probably want nElperFace==nElinlnet')
 
 c
 c     CHECK FOR INPUT FILE
@@ -262,6 +266,7 @@ C=======================================================================
     
       real    ff,fx,fy,fz,
      &           rr, rrx,rry,rrz
+      real, parameter :: sqrt32 = sqrt(3./2)
 
       integer neddy_ll
       save    neddy_ll
@@ -270,7 +275,7 @@ C=======================================================================
       integer clock, e,eg, 
      &      i,j,i_l,ne,nv,iseed
       !     functions
-      real dnekclock
+      real dnekclock, sqrtVn
   
 c --- generate initial eddy distribution ----
     
@@ -308,6 +313,8 @@ c ---- compute velocity contribution of eddies ------
       call rzero(v_sem,nv)
       call rzero(w_sem,nv)
 
+      sqrtVn = sqrt(Vb/real(neddy))
+
 c     do i=1,nv
       do e=1,nelv
         eg = lglel(e)
@@ -326,14 +333,14 @@ c         if (abs(xm1(1,1,1,e)-x_inlet).lt.1e-14) then
             rry = (ym1(i,j,1,e)-ey(ne))
             rrz = (zm1(i,j,1,e)-ez(ne))
 
-            rr = sqrt(rrx**2 + rry**2 + rrz**2)
+            rr = sqrt(rrx*rrx + rry*rry + rrz*rrz)
 
             if (rr.lt.sigma_inlet(i,j,eg)) then
-              fx = sqrt(3./2.)*(1.0-abs(rrx)/sigma_inlet(i,j,eg))
-              fy = sqrt(3./2.)*(1.0-abs(rry)/sigma_inlet(i,j,eg))
-              fz = sqrt(3./2.)*(1.0-abs(rrz)/sigma_inlet(i,j,eg))
+              fx = sqrt32*(1.0-abs(rrx)/sigma_inlet(i,j,eg))
+              fy = sqrt32*(1.0-abs(rry)/sigma_inlet(i,j,eg))
+              fz = sqrt32*(1.0-abs(rrz)/sigma_inlet(i,j,eg))
 
-              ff=fx*fy*fz*sqrt(Vb/(sigma_inlet(i,j,eg)**3.*real(neddy)))
+              ff=fx*fy*fz*sqrtVn/sqrt(sigma_inlet(i,j,eg))**3
 
               u_sem(i,j,1,e) = u_sem(i,j,1,e) + 
      $                      intensity_inlet(i,j,eg)*eps(1,ne)*ff
