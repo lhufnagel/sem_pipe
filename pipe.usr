@@ -169,16 +169,18 @@ c-----------------------------------------------------------------------
       include 'INPUT_DEF' 
       include 'INPUT' ! [xyz]c
 
+
       real, parameter :: pi = 3.14159265359
       real ymin, ymax, zmin, zmax
       integer n
+
 
 !     to read user module parameters
       call uprm_read
 
 c     Initialize SEM
 
-      call SEMinit
+c     call SEMinit
 
 c     Initialize SEM variables
       n = 8*nelv
@@ -209,35 +211,30 @@ c     Vb = (xbmax-xbmin)*(ybmax-ybmin)*(zbmax-zbmin)
 c-----------------------------------------------------------------------
 
       subroutine usrdat2
-
+        implicit none
       include 'SIZE_DEF'
       include 'SIZE' ! nelv
       include 'GEOM_DEF'
       include 'GEOM' ! nelv
-      integer n
+
+      integer i,n 
       real x_original, z_original
 
       n = nx1*ny1*nz1*nelv
       do i=1,n
          x_original = xm1(i,1,1,1)
-c        y_original = ym1(i,1,1,1) ! not necessary since it does not change
          z_original = zm1(i,1,1,1)
-
          xm1(i,1,1,1) =  z_original
-c        ym1(i,1,1,1) =  y_original ! not necessary since it does not change
          zm1(i,1,1,1) = -x_original
       enddo
-
-c     param(66) = 6. ! output : <0=ascii, else binary
-c     param(67) = 6. ! restart: <0=ascii, else binary
-
-      return
       return
       end
 
 c-----------------------------------------------------------------------
 
       subroutine usrdat3
+        implicit none
+        call SEMinit
       return
       end
 

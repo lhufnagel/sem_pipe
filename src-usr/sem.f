@@ -23,6 +23,13 @@ C
          save
 
          integer             :: nEddy ! number of eddies 
+
+         integer             :: nElInlet ! number of elements at inlet
+         ! Warning: This optimization assumes that actually the first
+         ! nElInlet mesh-elements are the inlet elements.
+         ! In the pipe-case the mesh is created accordingly, 
+         ! and nElInlet = nelperface
+
          real                :: sigma_min 
          ! lower eddy size bound  (due to mesh, usually)
          real                :: sigma_max 
@@ -39,6 +46,13 @@ C
          real                :: ybmin,ybmax,zbmin,zbmax,xbmin,xbmax 
          real                :: Vb
          real                :: x_inlet ! x value of inlet plane
+
+         real , allocatable  :: umean_inlet(:,:,:)
+         real , allocatable  :: sigma_inlet(:,:,:)
+         ! eddy size at inlet face
+         real , allocatable  :: intensity_inlet(:,:,:) 
+         ! cholesky of isotropic diag. reystress tensor
+         ! at inlet face
 
          ! Actual prescribed velocity field 
          ! (relevant elements, are extracted via 'v  ' bc)
@@ -62,11 +76,19 @@ c-----------------------------------------------------------------------
 
       include 'SIZE_DEF'
       include 'SIZE'  ! L[XYZ]1,LELV
+      include 'GEOM_DEF'
+      include 'GEOM' ! XM1
+      include 'PARALLEL_DEF'
+      include 'PARALLEL'
 
+      real vel_interp, tke_interp, dissip_interp, sigmal
       integer fid, nlines
-      integer i
+      integer e, i, j, eg
 
       logical semstop
+
+      if (nElInlet.gt.lely*lelz) call exitti
+     $  ('ABORT IN SEMinit. Increase lely*lelz in SIZE:$',nElInlet)
 
 c
 c     CHECK FOR INPUT FILE
@@ -113,13 +135,46 @@ c     Read infile
       allocate(eps(3,neddy))
       allocate(eddy_pt(neddy))
 
+      allocate(sigma_inlet(ly1,lz1,nElInlet))
+      allocate(intensity_inlet(ly1,lz1,nElInlet))
+      allocate(umean_inlet(ly1,lz1,nElInlet))
+
+      do e=1,nelv
+        eg = lglel(e)
+
+        ! Calculate eddy size and intensity at inlet only once
+        if (eg.le.nElInlet) then
+
+          do j=1,lz1
+          do i=1,ly1
+
+          call SEMinputData(sqrt(ym1(i,j,1,e)**2 + zm1(i,j,1,e)**2),
+     &                   vel_interp, tke_interp, dissip_interp)
+
+          sigmal = (tke_interp**1.5)/dissip_interp
+          sigmal = max(.5*sigmal,sigma_min)  
+          ! Limit eddy size far away from wall. Suggested in Jarrins PhD
+          ! Not implemented in Code Saturne
+          ! kappa is .41, 0.5 is pipe radius, therefore .41*.5
+          ! sigmal = max(.5*min(sigmal,0.41*0.5),sigma_min)  
+
+          sigma_inlet(i,j,eg)     = sigmal
+          intensity_inlet(i,j,eg) = sqrt(2./3.*tke_interp)
+          umean_inlet(i,j,eg)     = vel_interp
+
+          enddo
+          enddo
+        endif
+      enddo
+
       end subroutine SEMinit
 
 c-----------------------------------------------------------------------
 
 !     read parameters SEM
       subroutine SEM_param_in(fid)
-        use SEM, only: nEddy, sigma_min, sigma_max, bbox_max, u0
+        use SEM, only: nEddy, sigma_min, nElInlet, 
+     $                 sigma_max, bbox_max, u0
       implicit none
 
       include 'SIZE_DEF'
@@ -134,10 +189,12 @@ c-----------------------------------------------------------------------
       integer ierr
 
 !     namelists
-      namelist /SEM_list/ nEddy, sigma_min, sigma_max, bbox_max, u0
+      namelist /SEM_list/ nEddy, nElInlet, sigma_min,
+     $        sigma_max, bbox_max, u0
 !-----------------------------------------------------------------------
 !     default values
       nEddy = 5000
+      nElInlet = 256
       sigma_min = 0.01
       sigma_max = 0.25
       bbox_max = 0.05
@@ -151,6 +208,7 @@ c-----------------------------------------------------------------------
 
 !     broadcast data
       call bcast(nEddy,ISIZE)
+      call bcast(nElInlet,ISIZE)
       call bcast(sigma_min, WDSIZE)
       call bcast(sigma_max, WDSIZE)
       call bcast(bbox_max, WDSIZE)
@@ -161,7 +219,8 @@ c-----------------------------------------------------------------------
 !***********************************************************************
 !     write parameters checkpoint
       subroutine SEM_param_out(fid)
-        use SEM, only: nEddy, sigma_min, sigma_max, bbox_max, u0
+        use SEM, only: nEddy, sigma_min, nElInlet, 
+     $                 sigma_max, bbox_max, u0
       implicit none
 
       include 'SIZE_DEF'
@@ -174,7 +233,8 @@ c-----------------------------------------------------------------------
       integer ierr
 
 !     namelists
-      namelist /SEM_list/ nEddy, sigma_min, sigma_max, bbox_max, u0
+      namelist /SEM_list/ nEddy, nElInlet, sigma_min,
+     $        sigma_max, bbox_max, u0
 !-----------------------------------------------------------------------
       ierr=0
       if (NID.eq.0) then
@@ -197,27 +257,21 @@ C=======================================================================
       include 'TSTEP' ! ISTEP,IOSTEP
       include 'GEOM_DEF'
       include 'GEOM' ! XM1
-c     include 'TOTAL'
-c     include 'SYNTHEDDY'
+      include 'PARALLEL_DEF'
+      include 'PARALLEL' ! XM1
     
-      real vel_interp, tke_interp, dissip_interp, sigmal,
-     &           ff,fx,fy,fz,
+      real    ff,fx,fy,fz,
      &           rr, rrx,rry,rrz
 
-
-      integer clock
       integer neddy_ll
       save    neddy_ll
 
       real wk_e(neddy*3)
-      integer i,i_l,ne,nv,iseed
+      integer clock, e,eg, 
+     &      i,j,i_l,ne,nv,iseed
       !     functions
       real dnekclock
   
-
-
-      nv = nx1*ny1*nz1*nelv ! max number of elements per processor
-
 c --- generate initial eddy distribution ----
     
       if (istep.eq.0) then
@@ -248,49 +302,50 @@ c     possibly replace with glvadd
 
 c ---- compute velocity contribution of eddies ------
 
+      nv = nx1*ny1*nz1*nelv ! max number of gird points per processor
+
       call rzero(u_sem,nv)
       call rzero(v_sem,nv)
       call rzero(w_sem,nv)
 
-      do i=1,nv
+c     do i=1,nv
+      do e=1,nelv
+        eg = lglel(e)
+c         if (abs(xm1(1,1,1,e)-x_inlet).lt.1e-14) then
+        if (eg.le.nElInlet) then 
 
-        call SEMinputData(sqrt(ym1(i,1,1,1)**2 + zm1(i,1,1,1)**2),
-     &                           vel_interp, tke_interp, dissip_interp)
+        do j=1,lz1
+        do i=1,ly1
 
-        sigmal = (tke_interp**1.5)/dissip_interp
-        sigmal = max(.5*sigmal,sigma_min)  
+           u_sem(i,j,1,e) = umean_inlet(i,j,eg)
+           v_sem(i,j,1,e) = 0
+           w_sem(i,j,1,e) = 0
 
-        ! Limit eddy size far away from wall. Suggested in Jarrins PhD
-        ! Not implemented in Code Saturne
-        ! kappa is .41, 0.5 is pipe radius, therefore .41*.5
-        ! sigmal = max(.5*min(sigmal,0.41*0.5),sigma_min)  
-
-        tke_interp = sqrt(2./3.*tke_interp)
-
-        u_sem(i,1,1,1) = vel_interp
-        v_sem(i,1,1,1) = 0
-        w_sem(i,1,1,1) = 0
-
-        if (abs(xm1(i,1,1,1)-x_inlet).lt.sigmal) then
            do ne=1,neddy
-            rrx = (xm1(i,1,1,1)-ex(ne))
-            rry = (ym1(i,1,1,1)-ey(ne))
-            rrz = (zm1(i,1,1,1)-ez(ne))
+            rrx = (xm1(i,j,1,e)-ex(ne))
+            rry = (ym1(i,j,1,e)-ey(ne))
+            rrz = (zm1(i,j,1,e)-ez(ne))
+
             rr = sqrt(rrx**2 + rry**2 + rrz**2)
 
-            if (rr.lt.sigmal) then
-              fx = sqrt(3./2.)*(1.0-abs(rrx)/sigmal)
-              fy = sqrt(3./2.)*(1.0-abs(rry)/sigmal)
-              fz = sqrt(3./2.)*(1.0-abs(rrz)/sigmal)
+            if (rr.lt.sigma_inlet(i,j,eg)) then
+              fx = sqrt(3./2.)*(1.0-abs(rrx)/sigma_inlet(i,j,eg))
+              fy = sqrt(3./2.)*(1.0-abs(rry)/sigma_inlet(i,j,eg))
+              fz = sqrt(3./2.)*(1.0-abs(rrz)/sigma_inlet(i,j,eg))
 
-              ff=fx*fy*fz*sqrt(Vb/(sigmal**3.*real(neddy)))
+              ff=fx*fy*fz*sqrt(Vb/(sigma_inlet(i,j,eg)**3.*real(neddy)))
 
-              u_sem(i,1,1,1) = u_sem(i,1,1,1) + tke_interp*eps(1,ne)*ff
-              v_sem(i,1,1,1) = v_sem(i,1,1,1) + tke_interp*eps(2,ne)*ff
-              w_sem(i,1,1,1) = w_sem(i,1,1,1) + tke_interp*eps(3,ne)*ff
+              u_sem(i,j,1,e) = u_sem(i,j,1,e) + 
+     $                      intensity_inlet(i,j,eg)*eps(1,ne)*ff
+              v_sem(i,j,1,e) = v_sem(i,j,1,e) + 
+     $                      intensity_inlet(i,j,eg)*eps(2,ne)*ff
+              w_sem(i,j,1,e) = w_sem(i,j,1,e) + 
+     $                      intensity_inlet(i,j,eg)*eps(3,ne)*ff
             endif
            enddo         
-        endif 
+        enddo
+        enddo
+      endif 
       enddo
 
       return

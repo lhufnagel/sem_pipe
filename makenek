@@ -36,8 +36,9 @@ USR="avg_all.o sem.o IO_tools.o uparam.o chkpoint.o"
 
 
 # generic compiler flags
-G="-I./src-nek/ -I./src-usr/ -ggdb -fsanitize=address -fno-omit-frame-pointer"
-# valgrind!
+G="-I./src-nek/ -I./src-usr/ -g"
+#G="-I./src-nek/ -I./src-usr/ -ggdb -fsanitize=address -fno-omit-frame-pointer"
+#valgrind -ggdb -Wunused
 
 # optimization flags
 #OPT_FLAGS_STD=""

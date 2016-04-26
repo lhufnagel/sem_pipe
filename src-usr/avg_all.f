@@ -148,8 +148,8 @@ c        call invers2(jacmi,jacm1,ntot)
      $     'Error. Uncomment lx1 param. stmt. in avg_all, navier5.f'
           return
         endif
-        if (nelxy.gt.lely*lelz) call exitti
-     $  ('ABORT IN avg_stat_all. Increase lely*lelz in SIZE:$',nelxy)
+        if (nElperFace.gt.lely*lelz) call exitti
+     $('ABORT IN avg_stat_all. Increase lely*lelz in SIZE:$',nElperFace)
 
 
         ifverbose = .FALSE.
@@ -821,7 +821,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 c-----------------------------------------------------------------------
 
         ! extract the given x-value (must be mesh aligned)
-      subroutine extract_x_slice(x_val, stat_yz,nelyz,stat3d,nstat,w1) ! 
+      subroutine extract_x_slice(x_val,stat_yz,nelpFac,stat3d,nstat,w1)
         implicit none
 
       include 'SIZE_DEF'
@@ -831,29 +831,29 @@ c-----------------------------------------------------------------------
       include 'PARALLEL_DEF'
       include 'PARALLEL'
 
-      integer, intent(in) :: nelyz, nstat
+      integer, intent(in) :: nelpFac, nstat
       real, intent(in) :: x_val, stat3d(lx1,ly1,lz1, lelv,nstat)
-      real, intent(out) ::  w1(ly1*lz1*nelyz)
-      real, intent(out) :: stat_yz(ly1,lz1,nelyz, nstat)
+      real, intent(out) ::  w1(ly1*lz1*nelpFac)
+      real, intent(out) :: stat_yz(ly1,lz1,nelpFac, nstat)
       integer e,eg,ex,n, j, k
 
-      call rzero(stat_yz,lz1*ly1*nelyz*nstat)
+      call rzero(stat_yz,lz1*ly1*nelpFac*nstat)
 
       do n=1,nstat
       do e=1,nelv
         eg = lglel(e)
-        ex = mod(eg-1,nelyz)+1 ! avoid to access element 0 ..
+        ex = mod(eg-1,nelpFac)+1 ! avoid to access element 0 ..
 
         ! (+- floating precision)
         if (abs(x_val - xm1(1,1,1,e)) .lt. 1.e-14) then
-          do j=1,ly1
           do k=1,lz1
-            stat_yz(k,j,ex,n) = stat3d(k,j,1,e,n)
+          do j=1,ly1
+            stat_yz(j,k,ex,n) = stat3d(j,k,1,e,n)
           enddo
           enddo
         endif
       enddo
-      call gop(stat_yz(1,1,1,n),w1,'+  ', nelyz*ly1*lz1)
+      call gop(stat_yz(1,1,1,n),w1,'+  ', nelpFac*ly1*lz1)
       enddo
 
       return
