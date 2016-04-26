@@ -3,8 +3,8 @@ C
 C     HCUBE array dimensions
 C
       parameter (ldim=2)
-      parameter (lx1=6,ly1=lx1,lz1=1,lelt=160,lelv=lelt)
-      parameter (lxd=9,lyd=lxd,lzd=lxd)
+      parameter (lx1=8,ly1=lx1,lz1=1,lelt=600,lelv=lelt)
+      parameter (lxd=12,lyd=lxd,lzd=lxd)
       parameter (lelx=1,lely=20,lelz=20)
 c
 c     NOTE: for IBM BLUE GENE LX1,LXD has to be an even number (double hummer)
@@ -12,7 +12,7 @@ c     NOTE: for IBM BLUE GENE LX1,LXD has to be an even number (double hummer)
       parameter (ldimt= 1)       ! upper limit for passive scalars + T
 
       parameter (lp =  2200)   ! upper limit for number of CPUs
-      parameter (lelg = 180)  ! upper limit for total number of elements
+      parameter (lelg =1180)  ! upper limit for total number of elements
 
 C
 C    ******************************************************************
@@ -61,7 +61,7 @@ c
       PARAMETER (LMAXP=LX2*LY2*LZ2*LELV)
       PARAMETER (LXZ=LX1*LZ1)
       PARAMETER (LORDER=3)
-      PARAMETER (MAXOBJ=4,MAXMBR=LELT*6,lhis=90*150)
+      PARAMETER (MAXOBJ=4,MAXMBR=LELT*6,lhis=100)
 C
 C     Common Block Dimensions
 C

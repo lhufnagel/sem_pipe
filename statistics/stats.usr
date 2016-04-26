@@ -32,16 +32,18 @@ c-----------------------------------------------------------------------
       include 'SIZE_DEF'
       include 'SIZE'  ! L[XYZ]1,LELV,NID
 
-      integer nf, i, j, m, ssf, ifld
+      integer nf, i, j,n, m, ssf, ifld
       parameter (nf     = 71) ! Number of saved statistical fields 
-      integer n 
       real, parameter :: twoPi = 6.283185307179586476925286766
-      real stat_2D1(lx1*lelz*ly1*lely,nf)
-      real stat_2D(lx1*lelz*ly1*lely,nf)
-      real stat_int(ly1*lely*lx1*lelz,nf)
-      real stat_R(lx1*lelz*ly1*lely,nf)
 
-      real rg(lhis), theta_g(lhis)
+      real, allocatable  :: stat_2D1(:,:)
+      real, allocatable  ::  stat_2D(:,:)
+      real, allocatable  :: stat_int(:,:)
+      real, allocatable  ::   stat_R(:,:)
+
+      real, allocatable  :: rg(:)
+      real, allocatable  :: theta_g(:)
+
 
       integer CR
       integer ng_r, ng_theta
@@ -65,15 +67,12 @@ c-----------------------------------------------------------------------
 
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
-      real    pts(ldim,lhis)
-      real    fieldout(nf,lhis)
-
-      real    dist(lhis)
-
-      real    rst(lhis*ldim)
-      integer rcode(lhis),elid(lhis),proc(lhis)
-      common /hpts_r/ rst
-      common /hpts_i/ rcode,elid,proc
+      real, allocatable :: pts(:,:)
+      real, allocatable :: fieldout(:,:)
+      real, allocatable :: dist(:), rst(:)
+      integer, allocatable :: rcode(:), elid(:),proc(:)
+c     common /hpts_r/ rst
+c     common /hpts_i/ rcode,elid,proc
 
       integer icalld,npoints
       save    icalld,npoints
@@ -87,6 +86,8 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
       open(unit=20,form='unformatted',file='polar_mesh.bin')
       read(20) CR, ng_r, ng_theta
+      allocate(rg(ng_r))
+      allocate(theta_g(ng_theta))
       read(20) (rg(i),i=1,ng_r)
       close(20)
 
@@ -106,6 +107,14 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
       npoints= 0
 
+      allocate(pts(ldim,ng_r*ng_theta))
+      allocate(fieldout(nf,ng_r*ng_theta))
+      allocate(dist(ng_r*ng_theta))
+      allocate(rst(ng_r*ng_theta*ldim))
+      allocate(rcode(ng_r*ng_theta))
+      allocate(elid(ng_r*ng_theta))
+      allocate(proc(ng_r*ng_theta))
+
       do i = 1,ng_theta
       do j = 1,ng_r
        npoints = npoints + 1
@@ -117,28 +126,27 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
   
-       m=nx1*ny1*nz1*nelPerface
+       m=lx1*ly1*nelPerface
 
-       Tatime = 0.
-       Tnrec  = 0
-       do ifld=1,nf
-        do j=1,m
-          stat_2D1(j,ifld) = 0.
-          stat_2D(j,ifld) = 0.
-        enddo
-       enddo
+       allocate(stat_2D(m,nf))
+       allocate(stat_2D1(m,nf))
+       allocate(stat_int(m,nf))
+       allocate(stat_R(m,nf))
 
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
 
        do n = 1, nslices
-       ! assuming there less than 5000 statistical files
-       do ssf = 1,5000
+       ssf = 1
+       call rzero(stat_2d,lx1*ly1*nelperface*nf)
+       call rzero(stat_2d1,lx1*ly1*nelperface*nf)
+       Tatime = 0.
+       Tnrec  = 0
+       do while (.true.)
 
          write(pippo,'(F4.1, A, i4.4)') xslices(n), '_',  ssf
          inputname1 = 'recordings/stat_x_'//adjustl(trim(pippo))
 
-         write(*,*) inputname1
 
          inquire(file=inputname1,exist=file_exists); 
          if (.NOT.file_exists) goto 2908
@@ -189,6 +197,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
         enddo
 
         close(33) 
+        write(*,*) inputname1
 
         do ifld=1,nstat
           do j=1,m
@@ -197,6 +206,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
           enddo
         enddo
 
+        ssf = ssf + 1
       enddo
 
 2908  continue
@@ -213,7 +223,6 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
       write(pippo,'(F4.1)') xslices(n)
       inputname2 = 'recordings/polar_x_'//adjustl(trim(pippo))
-      write(*,*) inputname2
       open(unit=37,form='unformatted',file=inputname2) 
 
       write(val1,'(1p15e17.9)') mRey  	   	        ! Reynolds number	  
@@ -263,14 +272,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
       if(icalld.eq.0) then
-        if(nid.eq.0) then
-          if(npoints.gt.lhis) then
-            write(6,*) 
-     &   'ABORT: lhis too low, increase in SIZE', npoints, lhis
-            call exitt
-          endif
-          write(6,*) 'found ', npoints, ' points'
-        endif 
+        if(nid.eq.0) write(6,*) 'found ', npoints, ' points'
         call intpts_setup(-1.0,inth_hpts) ! use default tolerance
       endif
 
@@ -325,6 +327,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
       enddo
       close(37)
+      write(*,*) inputname2
 
 
       enddo

@@ -36,7 +36,7 @@ USR="IO_tools.o uparam.o avg_read.o"
 
 
 # generic compiler flags
-G="-I./src-nek/ -I./src-usr/ -ggdb"
+G="-I./src-nek/ -I./src-usr/"
 #G="-I./src-nek/ -I./src-usr/ -ggdb -fsanitize=address -fno-omit-frame-pointer"
 #valgrind -ggdb -Wunused
 
