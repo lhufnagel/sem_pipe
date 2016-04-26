@@ -17,25 +17,7 @@ c-----------------------------------------------------------------------
 c-----------------------------------------------------------------------
 
       subroutine userf  (ix,iy,iz,ieg)
-
-      implicit none
-
-      include 'SIZE_DEF'
-      include 'SIZE'  ! L[XYZ]1,LELV,LPX1,LPY1,LPZ1,NID
-      include 'SOLN_DEF'
-      include 'SOLN'  ! V[XYZ]
-      include 'NEKUSE_DEF'
-      include 'NEKUSE'! FF[XYZ]
-      include 'PARALLEL_DEF'
-      include 'PARALLEL' ! GLLEL
-
-      integer, intent(in) :: ix,iy,iz,ieg
-
-      ! No forcing
-      ffx = 0
-      ffy = 0
-      ffz = 0
-
+      return
       end
 
 c-----------------------------------------------------------------------
@@ -70,8 +52,7 @@ c-----------------------------------------------------------------------
       ! (L/umean)/dt plus tolerance for smaller dt
 
       ! 4800 steps = 2x flow-throughs 
-      ! if(istep.gt.1)
-      call avg_stat_all
+      if(istep.ge.1) call avg_stat_all
 
       ! Restart, NOT TESTED
       ! call checkpoint
@@ -170,17 +151,12 @@ c-----------------------------------------------------------------------
       include 'INPUT' ! [xyz]c
 
 
-      real, parameter :: pi = 3.14159265359
+      real, parameter :: twopi = 6.283185307179586476925286766
       real ymin, ymax, zmin, zmax
       integer n
 
-
 !     to read user module parameters
       call uprm_read
-
-c     Initialize SEM
-
-c     call SEMinit
 
 c     Initialize SEM variables
       n = 8*nelv
@@ -200,7 +176,7 @@ c     Initialize SEM variables
       ybmax = ymax + max(bbox_max, sigma_min)
       zbmin = zmin - max(bbox_max, sigma_min)
       zbmax = zmax + max(bbox_max, sigma_min)
-      Vb = (xbmax-xbmin)*ybmax**2*PI
+      Vb = (xbmax-xbmin)*ybmax**twopi
 c     Vb = (xbmax-xbmin)*(ybmax-ybmin)*(zbmax-zbmin)
 
       if (nid.eq.0) write(*,*) 'Geom:', x_inlet,ybmin,ybmax,zbmin,zbmax
@@ -217,8 +193,9 @@ c-----------------------------------------------------------------------
       include 'GEOM_DEF'
       include 'GEOM' ! nelv
 
-      ! Meshes, generated with pipeMeshNek have to get rotated
-      ! unfortunately
+      ! Meshes, generated with pipeMeshNek have to be rotated
+      ! Hence, the array xm1, vx, etc are indexed differently
+      ! Remember this in sem.f/avg_all.f
 
       integer i,n 
       real x_original
@@ -236,6 +213,8 @@ c-----------------------------------------------------------------------
 
       subroutine usrdat3
         implicit none
+
+c     Initialize SEM, after mesh was rotated
         call SEMinit
       return
       end

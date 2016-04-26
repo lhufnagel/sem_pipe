@@ -830,6 +830,9 @@ c-----------------------------------------------------------------------
 
       call rzero(stat_yz,lz1*ly1*nelpFac*nstat)
 
+      ! NOTE that the pipe/mesh is rotated in usrdat2()
+      ! hence, the inverted indexing into stat3d
+
       do n=1,nstat
       do e=1,nelv
         eg = lglel(e)

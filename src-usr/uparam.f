@@ -71,16 +71,16 @@
       call user_param_in(iunit)
 
       rewind(iunit)
+!     Statistics
+      call avg_param_in(iunit)
+
+      rewind(iunit)
 !     restart
       call chkpt_param_in(iunit)
 
       rewind(iunit)
 !     SEM
       call sem_param_in(iunit)
-
-      rewind(iunit)
-!     Statistics
-      call avg_param_in(iunit)
 
       return
       end
@@ -97,14 +97,14 @@
 !     user parameters
       call user_param_out(iunit)
 
+!     Statistics
+      call avg_param_out(iunit)
+
 !     restart
       call chkpt_param_out(iunit)
 
 !     SEM
       call sem_param_out(iunit)
-
-!     Statistics
-      call avg_param_out(iunit)
 
       return
       end

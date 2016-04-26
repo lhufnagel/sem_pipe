@@ -88,11 +88,17 @@ c-----------------------------------------------------------------------
 
       logical semstop
 
-      if (nElInlet.gt.lely*lelz) call exitti
-     $  ('ABORT IN SEMinit. Increase lely*lelz in SIZE:$',nElInlet)
+      if (nElInlet.gt.lely*lelz) then
+        if (nid.eq.0) write(*,*) 
+     $ 'ABORT IN SEMinit. Increase lely*lelz in SIZE ',nElInlet
+        call exitti
+      endif
 
-      if (nElInlet.ne.nElperFace) call exitti
-     $('ABORT For pipe flow, you probably want nElperFace==nElinlnet')
+      if (nElInlet.ne.nElperFace) then
+        if (nid.eq.0) write(*,*) 
+     $'ABORT For pipe flow, you probably want nElperFace==nElinlnet'
+        call exitti
+      endif
 
 c
 c     CHECK FOR INPUT FILE
@@ -145,6 +151,9 @@ c     Read infile
 
       do e=1,nelv
         eg = lglel(e)
+
+        ! NOTE that the pipe/mesh is rotated in usrdat2()
+        ! hence, the inverted indexing into ym1/zm1
 
         ! Calculate eddy size and intensity at inlet only once
         if (eg.le.nElInlet) then
@@ -324,6 +333,9 @@ c         if (abs(xm1(1,1,1,e)-x_inlet).lt.1e-14) then
         do j=1,lz1
         do i=1,ly1
 
+        ! NOTE that the pipe/mesh is rotated in usrdat2()
+        ! hence, the inverted indexing into ym1/zm1
+
            u_sem(i,j,1,e) = umean_inlet(i,j,eg)
            v_sem(i,j,1,e) = 0
            w_sem(i,j,1,e) = 0
@@ -396,7 +408,7 @@ c     Generate eddy location randomly in bounding box
       use SEM, only: xbmin, xbmax, ybmax 
       implicit none
 
-      real, parameter :: twoPi = 6.28318530718
+      real, parameter :: twoPi = 6.283185307179586476925286766
       double precision, external :: rnd_loc
       include 'SIZE_DEF'
       include 'SIZE'
