@@ -117,7 +117,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
       nelz = 1       !
 
       ntot    = nx1*ny1*nz1*nelv
-
+      
       if (icalld.eq.0) then
         icalld = icalld + 1
 
@@ -142,18 +142,16 @@ c        call invers2(jacmi,jacm1,ntot)
         call rzero(stat,ntot*nstat)
         ! TODO why not stat_extra and stat_rot?
 
-
-        if (lx1.eq.1) then
-          write(6,*) nid,
-     $     'Error. Uncomment lx1 param. stmt. in avg_all, navier5.f'
-          return
-        endif
         if (nElperFace.gt.lely*lelz) call exitti
      $('ABORT IN avg_stat_all. Increase lely*lelz in SIZE:$',nElperFace)
 
 
-        ifverbose = .FALSE.
+         nrec  = 0
+         times = time
+
+         if(nid.eq.0) indts = 0
       endif
+      ifverbose = .FALSE.
 
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
@@ -163,13 +161,6 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
       iastep = param(68)
       if  (iastep.eq.0) iastep=param(15)   ! same as iostep
       if  (iastep.eq.0) iastep=500
-
-C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
-
-      if (istep.eq.0) then
-         nrec  = 0
-         times = time
-      endif
 
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C  
      
@@ -184,12 +175,13 @@ c      call mappr(pm1,pr,wk1,wk2) ! map pressure to mesh 1 (vel. mesh)
         pmean = -surf_mean(pr,1,'W  ',ierr)
         call cadd(p0,pmean,ntot)
 
+
+
         call comp_derivat(duidxj,vx,vy,vz,ur,us,ut,vr,vs,vt,wr,ws,wt)
 
         if (atime.ne.0..and.dtime.ne.0.) then ! closed in l. 1606
           beta  = dtime/atime
           alpha = 1.-beta
-
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C 
 
       call avg1(stat(1,1),vx,alpha,beta,ntot,'velx',ifverbose)     ! <u>
@@ -205,6 +197,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       call avg3(stat(1,9),vx,vy,alpha,beta,ntot,'uvrm',ifverbose)  ! <uv> (u, v: instantaneous)
       call avg3(stat(1,10),vy,vz,alpha,beta,ntot,'vwrm',ifverbose) ! <vw> (v, w: instantaneous)
       call avg3(stat(1,11),vz,vx,alpha,beta,ntot,'wurm',ifverbose) ! <uw> (u, w: instantaneous)
+
 
       call avg4(stat(1,12),vx,p0,alpha,beta,ntot,'pu')   ! <pu> (p, u: instantaneous)
       call avg4(stat(1,13),vy,p0,alpha,beta,ntot,'pv')   ! <pv> (p, v: instantaneous)           
@@ -312,7 +305,6 @@ cC%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       endif
       endif
 
-
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C 
 C ------------------------------------------------------------------------------- C
 C ------- average the statistical quantities in the homogeneous directions ------ C
@@ -320,7 +312,6 @@ C   planar_average_z; average in the homogeneous streamwise (axial) z-direction 
 C ------------------------------------------------------------------------------- C
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C 
 
-      if(nid.eq.0.and.istep.eq.1) indts = 0
 
       if (mod(istep,iastep).eq.0.and.istep.ge.1) then
 
