@@ -1,0 +1,19 @@
+&USERPAR
+ /
+&AVG_LIST
+ nSlices=5,
+ nElperFace=320,
+ xslices=0.,3.,5.,7.,10.,
+ /
+&CHKPOINT
+ CHKPTSTEP= 10,
+ IFCHKPTRST=F,
+ /
+&SEM_LIST
+ neddy=5000,
+ nElInlet=144,
+ sigma_max=0.27486,
+ sigma_min=0.01,
+ bbox_max=0.056101,
+ u0=1.0,
+ /
