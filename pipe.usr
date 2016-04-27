@@ -151,7 +151,7 @@ c-----------------------------------------------------------------------
       include 'INPUT' ! [xyz]c
 
 
-      real, parameter :: twopi = 6.283185307179586476925286766
+      real, parameter :: pi = 3.14159265358979323846264338327950288
       real ymin, ymax, zmin, zmax
       integer n
 
@@ -176,7 +176,7 @@ c     Initialize SEM variables
       ybmax = ymax + max(bbox_max, sigma_min)
       zbmin = zmin - max(bbox_max, sigma_min)
       zbmax = zmax + max(bbox_max, sigma_min)
-      Vb = (xbmax-xbmin)*ybmax**twopi
+      Vb = (xbmax-xbmin)*ybmax**2.*pi
 c     Vb = (xbmax-xbmin)*(ybmax-ybmin)*(zbmax-zbmin)
 
       if (nid.eq.0) write(*,*) 'Geom:', x_inlet,ybmin,ybmax,zbmin,zbmax
