@@ -14,7 +14,7 @@ The SEM is implemented to generate nonuniform, isotropic turbulence, like in cas
     * `u0` The bulk mean velocity
     * `Vb`, `x_inlet`, and `ybmax` are be set in `usrdat()`. They are the volume of the convective box/cylinder, the `x` coordinate of the inlet and the _radius_
  
-As of now, the SEM is only implemented to generate a turbulent signal in x-positive direction. It should however be straightforward to change the relevant code.The first elements in the `pipe.rea` should be the face, at which the SEM inflow is placed. This enables us to precompute eddy-size once for the whole simulation (using linear interpolation from `sem_input.txt`) instead of calculate the eddy-size at each time step. An unoptmized version without this limitation shoud be in [commit aaa095](./aaa095)
+As of now, the SEM is only implemented to generate a turbulent signal in x-positive direction. It should however be straightforward to change the relevant code.The first elements in the `pipe.rea` should be the face, at which the SEM inflow is placed. This enables us to precompute eddy-size once for the whole simulation (using linear interpolation from `sem_input.txt`) instead of calculate the eddy-size at each time step. An unoptmized version without this limitation shoud be in [commit aaa095](../../commit/aaa095)
 
 
 ## Workflow
