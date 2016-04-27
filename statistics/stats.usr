@@ -149,7 +149,11 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
 
          inquire(file=inputname1,exist=file_exists); 
-         if (.NOT.file_exists) goto 2908
+         if (.NOT.file_exists) then
+           if (ssf.eq.1) write(*,*) 
+     $ '!!! WARNING: failed to find input slice for x=', xslices(n)
+           goto 2908
+         endif
 
          open(unit=33,form='unformatted',file=inputname1)
 
