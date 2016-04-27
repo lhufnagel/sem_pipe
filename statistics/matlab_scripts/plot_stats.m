@@ -225,7 +225,7 @@ end
 hold off;
 figure(1);
 title('Bulk-Velocity from SEM along developing straight pipe, where L = 24*R')
-xlabel(['x Downstream the pipe; Velocity in (m/s)^+ is scaled by *' num2str(u_plot_scaling)]); 
+xlabel(['x in diameters downstream the pipe; Velocity in (m/s)^+ is scaled by *' num2str(u_plot_scaling)]); 
 ylabel('r^+');
 legend('u_{mean}^+', 'El Khoury');%, 'visc. sublayer', 'loglaw');
 axis([min(x_vals) 1.25*max(x_vals) .5 2*Re_tau]);
@@ -233,49 +233,49 @@ axis([min(x_vals) 1.25*max(x_vals) .5 2*Re_tau]);
 
 figure(2);
 title('Turbulence kinetic energy from SEM along developing straight pipe, where L = 24*R')
-xlabel(['x Downstream the pipe; Energy in kg*(m/s)^2 is scaled by *' num2str(k_plot_scaling)]); 
+xlabel(['x in diameters downstream the pipe; Energy in kg*(m/s)^2 is scaled by *' num2str(k_plot_scaling)]); 
 ylabel('r^+');
 legend('k', 'El Khoury');%, 'visc. sublayer', 'loglaw');
 axis([min(x_vals) 1.25*max(x_vals) .5 2*Re_tau]);
 
 figure(3);
 title('u_{x,rms}^+ from SEM along developing straight pipe, where L = 24*R')
-xlabel(['x Downstream the pipe; Velocity in (m/s)^+ is not scaled']); 
+xlabel(['x in diameters downstream the pipe; Velocity in (m/s)^+ is not scaled']); 
 ylabel('r^+');
 legend('u_{\theta,rms}', 'El Khoury');
 axis([min(x_vals) 1.25*max(x_vals) .5 2*Re_tau]);
 
 figure(4);
 title('u_{\theta,rms}^+ from SEM along developing straight pipe, where L = 24*R')
-xlabel(['x Downstream the pipe; Velocity in (m/s)^+ is scaled by *' num2str(rms_plot_scaling)]); 
+xlabel(['x in diameters downstream the pipe; Velocity in (m/s)^+ is scaled by *' num2str(rms_plot_scaling)]); 
 ylabel('r^+');
 legend('u_{\theta,rms}', 'El Khoury');
 axis([min(x_vals) 1.25*max(x_vals) .5 2*Re_tau]);
 
 figure(5);
 title('u_{r,rms}^+ from SEM along developing straight pipe, where L = 24*R')
-xlabel(['x Downstream the pipe; Velocity in (m/s)^+ is scaled by *' num2str(rms_plot_scaling)]); 
+xlabel(['x in diameters downstream the pipe; Velocity in (m/s)^+ is scaled by *' num2str(rms_plot_scaling)]); 
 ylabel('r^+');
 legend('u_{r,rms}', 'El Khoury');
 axis([min(x_vals) 1.25*max(x_vals) .5 2*Re_tau]);
 
 figure(6);
 title('(minus) \epsilon_{rr} from SEM along developing straight pipe, where L = 24*R')
-xlabel(['x Downstream the pipe; Velocity in (m/s) is scaled by *' num2str(k_plot_scaling)]); 
+xlabel(['x in diameters downstream the pipe; Velocity in (m/s) is scaled by *' num2str(k_plot_scaling)]); 
 ylabel('r^+');
 legend('-\epsilon_{rr}', 'El Khoury');
 axis([min(x_vals) 1.25*max(x_vals) .5 2*Re_tau]);
 
 figure(7);
 title('(minus) \epsilon_{\theta\theta} from SEM along developing straight pipe, where L = 24*R')
-xlabel(['x Downstream the pipe; Velocity in (m/s) is scaled by *' num2str(k_plot_scaling)]); 
+xlabel(['x in diameters downstream the pipe; Velocity in (m/s) is scaled by *' num2str(k_plot_scaling)]); 
 ylabel('r^+');
 legend('-\epsilon_{\theta\theta}', 'El Khoury');
 axis([min(x_vals) 1.25*max(x_vals) .5 2*Re_tau]);
 
 figure(8);
 title('(minus) \epsilon_{xx} from SEM along developing straight pipe, where L = 24*R')
-xlabel(['x Downstream the pipe; Velocity in (m/s) is scaled by *' num2str(20)]); 
+xlabel(['x in diameters downstream the pipe; Velocity in (m/s) is scaled by *' num2str(20)]); 
 ylabel('r^+');
 legend('-\epsilon_{xx}', 'El Khoury');
 axis([min(x_vals) 1.25*max(x_vals) .5 2*Re_tau]);
