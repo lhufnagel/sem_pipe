@@ -31,6 +31,8 @@ c-----------------------------------------------------------------------
 
       include 'SIZE_DEF'
       include 'SIZE'  ! L[XYZ]1,LELV,NID
+      include 'PARALLEL_DEF'
+      include 'PARALLEL'  ! nelgt
 
       integer nf, i, j,n, m, ssf, ifld
       parameter (nf     = 71) ! Number of saved statistical fields 
@@ -190,7 +192,8 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
          call exitt
         endif   
 
-        if (nElperFace.ne.lelt) then
+
+        if (nElperFace.ne.nelgt) then
           write(6,*) 
      $  'change nr. of elem in stats.rea to be equal to that of the run'
          call exitt
