@@ -181,7 +181,8 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
         endif 
 
         if (nElperFace.ne.mnely) then
-         write(6,*) 'change nely to be equal to that of the run'
+          write(6,*) 
+     $  'change nElperFace in pipe.upar to be equal to that of the run'
          call exitt
         endif   
 
