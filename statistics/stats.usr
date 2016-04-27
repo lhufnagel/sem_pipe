@@ -190,6 +190,12 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
          call exitt
         endif   
 
+        if (nElperFace.ne.lelt) then
+          write(6,*) 
+     $  'change nr. of elem in stats.rea to be equal to that of the run'
+         call exitt
+        endif   
+
         if (polyx.ne.lx1-1) then
          write(6,*) 'change lx1 to be equal to that of the run'
          call exitt
