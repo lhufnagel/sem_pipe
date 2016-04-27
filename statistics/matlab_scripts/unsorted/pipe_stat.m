@@ -106,7 +106,7 @@ format long;
 %%%%%%%%%%%%%%%%%%%%% Read the interpolated field %%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if ~exist('fname')
-    fname         = 'int_fld';
+  fname = '../recordings/polar_x_0.0';
 end
 [fid,message] = fopen(fname,'r','ieee-le');
 hdr           = fread(fid,1,'int32')      ;
@@ -1079,12 +1079,13 @@ VDtke = 0.5*(VDrr+VDthth+VDss);
 % 46. e13: (du/dx.dw/dx + du/dy.dw/dy + du/dz.dw/dz)_mean (u, w: instantaneous) % Q45 
 % 47. e23: (dv/dx.dw/dx + dv/dy.dw/dy + dv/dz.dw/dz)_mean (v, w: instantaneous) % Q46 
 
-% e11 = e11 - (dU/dx)^2 - (dU/dy)^2 
-% e22 = e22 - (dV/dx)^2 - (dV/dy)^2 
-% e33 = e33 - (dW/dx)^2 - (dW/dy)^2 
-% e12 = e12 - (dU/dx*dV/x) - (dU/dx*dV/dy)
-% e13 = e13 - (dU/dx*dW/x) - (dU/dx*dW/dy)
-% e23 = e23 - (dV/dx*dW/x) - (dV/dx*dW/dy)
+
+% e11 = e11 - (dU/dx)^2 - (dU/dy)^2 - (dU/dz)^2 
+% e22 = e22 - (dV/dx)^2 - (dV/dy)^2 - (dV/dz)^2 
+% e33 = e33 - (dW/dx)^2 - (dW/dy)^2 - (dW/dz)^2 
+% e12 = e12 - (dU/dx*dV/x) - (dU/dx*dV/dy) - (dU/dx*dV/dz)
+% e13 = e13 - (dU/dx*dW/x) - (dU/dx*dW/dy) - (dU/dx*dW/dz)
+% e23 = e23 - (dV/dx*dW/x) - (dV/dx*dW/dy) - (dV/dx*dW/dz)
 
 e11(1:n_r,1:n_theta) = 0; 
 e22(1:n_r,1:n_theta) = 0;
@@ -1096,20 +1097,23 @@ e23(1:n_r,1:n_theta) = 0;
 for j = 1:n_theta
         
     e11(:,j) = Q41(:,j) - ...
-        (squeeze(dUidxj(1,1,:,j))).^2  - (squeeze(dUidxj(1,2,:,j))).^2; 
+        (squeeze(dUidxj(1,1,:,j))).^2  - (squeeze(dUidxj(1,2,:,j))).^2 - (squeeze(dUidxj(1,3,:,j))).^2; 
     e22(:,j) = Q42(:,j) - ...
-        (squeeze(dUidxj(2,1,:,j))).^2  - (squeeze(dUidxj(2,2,:,j))).^2; 
+        (squeeze(dUidxj(2,1,:,j))).^2  - (squeeze(dUidxj(2,2,:,j))).^2- (squeeze(dUidxj(2,3,:,j))).^2; 
     e33(:,j) = Q43(:,j) - ...
-        (squeeze(dUidxj(3,1,:,j))).^2  - (squeeze(dUidxj(3,2,:,j))).^2; 
+        (squeeze(dUidxj(3,1,:,j))).^2  - (squeeze(dUidxj(3,2,:,j))).^2- (squeeze(dUidxj(3,3,:,j))).^2; 
     e12(:,j) = Q44(:,j) - ...
         squeeze(dUidxj(1,1,:,j)).*squeeze(dUidxj(2,1,:,j)) - ...
-        squeeze(dUidxj(1,2,:,j)).*squeeze(dUidxj(2,2,:,j));
+        squeeze(dUidxj(1,2,:,j)).*squeeze(dUidxj(2,2,:,j)) - ...
+        squeeze(dUidxj(1,3,:,j)).*squeeze(dUidxj(2,3,:,j));
     e13(:,j) = Q45(:,j) - ...
         squeeze(dUidxj(1,1,:,j)).*squeeze(dUidxj(3,1,:,j)) - ...
-        squeeze(dUidxj(1,2,:,j)).*squeeze(dUidxj(3,2,:,j));
+        squeeze(dUidxj(1,2,:,j)).*squeeze(dUidxj(3,2,:,j)) - ...
+        squeeze(dUidxj(1,3,:,j)).*squeeze(dUidxj(3,3,:,j));
     e23(:,j) = Q46(:,j) - ...
         squeeze(dUidxj(2,1,:,j)).*squeeze(dUidxj(3,1,:,j)) - ...
-        squeeze(dUidxj(2,2,:,j)).*squeeze(dUidxj(3,2,:,j));    
+        squeeze(dUidxj(2,2,:,j)).*squeeze(dUidxj(3,2,:,j)) - ...
+        squeeze(dUidxj(2,3,:,j)).*squeeze(dUidxj(3,3,:,j));    
       
 end
 

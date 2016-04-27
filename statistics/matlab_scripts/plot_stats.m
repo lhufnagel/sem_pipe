@@ -33,6 +33,7 @@ ref_u = reference.data(:,3);
 ref_ur_rms = reference.data(:,5);
 ref_ut_rms = reference.data(:,6);
 ref_uz_rms = reference.data(:,7);
+ref_uzur = reference.data(:,8);
 ref_k = u_tau^2*.5*(ref_ur_rms.^2+ref_ut_rms.^2+ref_uz_rms.^2);
 
 %Glob files
@@ -66,6 +67,8 @@ clf;
 figure(7);
 clf;
 figure(8);
+clf;
+figure(9);
 clf;
 
 
@@ -110,6 +113,9 @@ for file = 1:length(file_names)
   ux_rms = sqrt(abs(squeeze(RR2_mean(1,1,:))));
   ut_rms = sqrt(abs(squeeze(RR2_mean(2,2,:))));
   ur_rms = sqrt(abs(squeeze(RR2_mean(3,3,:))));
+
+  ux_ur =  squeeze(mean(abs(RR2(1,3,:,:)),4));
+
   k = .5*(ux_rms.^2+ur_rms.^2+ut_rms.^2);
 
 
@@ -138,8 +144,22 @@ for file = 1:length(file_names)
   err_rel = calcRelErr(interp1(ref_r, ref_uz_rms, r10/delta_tau), ux_rms/u_tau);
   text(x_vals(file)+.5*max(ref_uz_rms),4+mod(file,2) , ['||e_{rel}|| = ' num2str(err_rel)],'Color','red','FontSize',12);
 
-
   figure(4);
+
+  semilogy(x_vals(file) +  ux_ur/u_tau^2, r10/delta_tau, 'x-');
+  hold on; % Have to put hold after first semilog call - matlab bug
+
+  % Plot El-Khoury reference
+  semilogy(x_vals(file) + ref_uzur, ref_r, 'k--');
+  % labels
+  text(x_vals(file)+.1,1.5, ['x = ' num2str(x_vals(file))]);
+  line([x_vals(file) x_vals(file)],[.1 max(r10/delta_tau)]);
+
+  err_rel = calcRelErr(interp1(ref_r, ref_uzur, r10/delta_tau), ux_ur/u_tau^2);
+  text(x_vals(file)+.5*max(ref_uzur),4+mod(file,2) , ['||e_{rel}|| = ' num2str(err_rel)],'Color','red','FontSize',12);
+
+
+  figure(5);
 
   semilogy(x_vals(file) +  rms_plot_scaling*ut_rms/u_tau, r10/delta_tau, 'x-');
   hold on; % Have to put hold after first semilog call - matlab bug
@@ -153,7 +173,7 @@ for file = 1:length(file_names)
   err_rel = calcRelErr(interp1(ref_r, ref_ut_rms, r10/delta_tau), ut_rms/u_tau);
   text(x_vals(file)+.5*max(ref_ut_rms),4+mod(file,2) , ['||e_{rel}|| = ' num2str(err_rel)],'Color','red','FontSize',12);
 
-  figure(5);
+  figure(6);
 
   semilogy(x_vals(file) +  rms_plot_scaling*ur_rms/u_tau, r10/delta_tau, 'x-');
   hold on; % Have to put hold after first semilog call - matlab bug
@@ -167,9 +187,7 @@ for file = 1:length(file_names)
   err_rel = calcRelErr(interp1(ref_r, ref_ur_rms, r10/delta_tau), ur_rms/u_tau);
   text(x_vals(file)+.5*max(ref_ur_rms),4+mod(file,2) , ['||e_{rel}|| = ' num2str(err_rel)],'Color','red','FontSize',12);
 
-  figure(6);
-
-
+  figure(7);
 
  %Drr   = -2*nu*squeeze(DS_cyl(1,1,:,:));%./normal;
  %Dthth = -2*nu*squeeze(DS_cyl(2,2,:,:));%./normal;
@@ -188,7 +206,7 @@ for file = 1:length(file_names)
   err_rel = calcRelErr(interp1(ref_r, -ref_eps_rr, r10/delta_tau), eps_rr);
   text(x_vals(file)+.5*max(ref_uz_rms),4+mod(file,2) , ['||e_{rel}|| = ' num2str(err_rel)],'Color','red','FontSize',12);
 
-  figure(7);
+  figure(8);
 
   eps_tt = -mean(Dthth,2);
 
@@ -204,7 +222,7 @@ for file = 1:length(file_names)
   err_rel = calcRelErr(interp1(ref_r, -ref_eps_tt, r10/delta_tau), eps_tt);
   text(x_vals(file)+.5*max(ref_uz_rms),4+mod(file,2) , ['||e_{rel}|| = ' num2str(err_rel)],'Color','red','FontSize',12);
 
-  figure(8);
+  figure(9);
 
   eps_xx = -mean(Drr,2);
 
@@ -225,7 +243,7 @@ end
 hold off;
 figure(1);
 title('Bulk-Velocity from SEM along developing straight pipe, where L = 24*R')
-xlabel(['x Downstream the pipe; Velocity in (m/s)^+ is scaled by *' num2str(u_plot_scaling)]); 
+xlabel(['x in diameters downstream the pipe; Velocity in (m/s)^+ is scaled by *' num2str(u_plot_scaling)]); 
 ylabel('r^+');
 legend('u_{mean}^+', 'El Khoury');%, 'visc. sublayer', 'loglaw');
 axis([min(x_vals) 1.25*max(x_vals) .5 2*Re_tau]);
@@ -233,49 +251,56 @@ axis([min(x_vals) 1.25*max(x_vals) .5 2*Re_tau]);
 
 figure(2);
 title('Turbulence kinetic energy from SEM along developing straight pipe, where L = 24*R')
-xlabel(['x Downstream the pipe; Energy in kg*(m/s)^2 is scaled by *' num2str(k_plot_scaling)]); 
+xlabel(['x in diameters downstream the pipe; Energy in kg*(m/s)^2 is scaled by *' num2str(k_plot_scaling)]); 
 ylabel('r^+');
 legend('k', 'El Khoury');%, 'visc. sublayer', 'loglaw');
 axis([min(x_vals) 1.25*max(x_vals) .5 2*Re_tau]);
 
 figure(3);
 title('u_{x,rms}^+ from SEM along developing straight pipe, where L = 24*R')
-xlabel(['x Downstream the pipe; Velocity in (m/s)^+ is not scaled']); 
+xlabel(['x in diameters downstream the pipe; Velocity in (m/s)^+ is not scaled']); 
 ylabel('r^+');
 legend('u_{\theta,rms}', 'El Khoury');
 axis([min(x_vals) 1.25*max(x_vals) .5 2*Re_tau]);
 
 figure(4);
+title('<u_xu_r>^+ from SEM along developing straight pipe, where L = 24*R')
+xlabel(['x in diameters downstream the pipe; Velocity in (m/s)^+ is not scaled']); 
+ylabel('r^+');
+legend('<u_xu_r>^+', 'El Khoury');
+axis([min(x_vals) 1.25*max(x_vals) .5 2*Re_tau]);
+
+figure(5);
 title('u_{\theta,rms}^+ from SEM along developing straight pipe, where L = 24*R')
-xlabel(['x Downstream the pipe; Velocity in (m/s)^+ is scaled by *' num2str(rms_plot_scaling)]); 
+xlabel(['x in diameters downstream the pipe; Velocity in (m/s)^+ is scaled by *' num2str(rms_plot_scaling)]); 
 ylabel('r^+');
 legend('u_{\theta,rms}', 'El Khoury');
 axis([min(x_vals) 1.25*max(x_vals) .5 2*Re_tau]);
 
-figure(5);
+figure(6);
 title('u_{r,rms}^+ from SEM along developing straight pipe, where L = 24*R')
-xlabel(['x Downstream the pipe; Velocity in (m/s)^+ is scaled by *' num2str(rms_plot_scaling)]); 
+xlabel(['x in diameters downstream the pipe; Velocity in (m/s)^+ is scaled by *' num2str(rms_plot_scaling)]); 
 ylabel('r^+');
 legend('u_{r,rms}', 'El Khoury');
 axis([min(x_vals) 1.25*max(x_vals) .5 2*Re_tau]);
 
-figure(6);
+figure(7);
 title('(minus) \epsilon_{rr} from SEM along developing straight pipe, where L = 24*R')
-xlabel(['x Downstream the pipe; Velocity in (m/s) is scaled by *' num2str(k_plot_scaling)]); 
+xlabel(['x in diameters downstream the pipe; Velocity in (m/s) is scaled by *' num2str(k_plot_scaling)]); 
 ylabel('r^+');
 legend('-\epsilon_{rr}', 'El Khoury');
 axis([min(x_vals) 1.25*max(x_vals) .5 2*Re_tau]);
 
-figure(7);
+figure(8);
 title('(minus) \epsilon_{\theta\theta} from SEM along developing straight pipe, where L = 24*R')
-xlabel(['x Downstream the pipe; Velocity in (m/s) is scaled by *' num2str(k_plot_scaling)]); 
+xlabel(['x in diameters downstream the pipe; Velocity in (m/s) is scaled by *' num2str(k_plot_scaling)]); 
 ylabel('r^+');
 legend('-\epsilon_{\theta\theta}', 'El Khoury');
 axis([min(x_vals) 1.25*max(x_vals) .5 2*Re_tau]);
 
-figure(8);
+figure(9);
 title('(minus) \epsilon_{xx} from SEM along developing straight pipe, where L = 24*R')
-xlabel(['x Downstream the pipe; Velocity in (m/s) is scaled by *' num2str(20)]); 
+xlabel(['x in diameters downstream the pipe; Velocity in (m/s) is scaled by *' num2str(20)]); 
 ylabel('r^+');
 legend('-\epsilon_{xx}', 'El Khoury');
 axis([min(x_vals) 1.25*max(x_vals) .5 2*Re_tau]);

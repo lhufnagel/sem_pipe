@@ -31,6 +31,8 @@ c-----------------------------------------------------------------------
 
       include 'SIZE_DEF'
       include 'SIZE'  ! L[XYZ]1,LELV,NID
+      include 'PARALLEL_DEF'
+      include 'PARALLEL'  ! nelgt
 
       integer nf, i, j,n, m, ssf, ifld
       parameter (nf     = 71) ! Number of saved statistical fields 
@@ -149,7 +151,11 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
 
          inquire(file=inputname1,exist=file_exists); 
-         if (.NOT.file_exists) goto 2908
+         if (.NOT.file_exists) then
+           if (ssf.eq.1) write(*,*) 
+     $ '!!! WARNING: failed to find input slice for x=', xslices(n)
+           goto 2908
+         endif
 
          open(unit=33,form='unformatted',file=inputname1)
 
@@ -181,7 +187,15 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
         endif 
 
         if (nElperFace.ne.mnely) then
-         write(6,*) 'change nely to be equal to that of the run'
+          write(6,*) 
+     $  'change nElperFace in pipe.upar to be equal to that of the run'
+         call exitt
+        endif   
+
+
+        if (nElperFace.ne.nelgt) then
+          write(6,*) 
+     $  'change nr. of elem in stats.rea to be equal to that of the run'
          call exitt
         endif   
 
