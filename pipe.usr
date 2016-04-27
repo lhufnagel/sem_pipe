@@ -79,27 +79,6 @@ c     NOTE ::: This subroutine MAY NOT be called by every process
       integer, intent(in) :: ix,iy,iz,iside,ieg
       integer iel
 
-      real U0delta,S0 ! Dong parameters
-      
-c     Dong outflow boundary condition
-      pa =0
-      U0delta = 1.
-
-      if (cbu.eq.'o  ') then
-
-c     The current definition assumes that the normal velocity
-c     is ux, i.e. the boundary is orthogonal to x, and the outflow
-c     direction is in postive x.
-         S0  = 0.5*(1-tanh(ux/U0delta))
-
-         if (IF3D) then
-            pa = -0.5*(ux*ux+uy*uy+uz*uz)*S0
-         else
-            pa = -0.5*(ux*ux+uy*uy)*S0
-         endif
-         
-      endif
-
 c     SEM inflow
 
       iel=gllel(ieg)
@@ -126,13 +105,13 @@ c-----------------------------------------------------------------------
 
       real vel, tke, dissip, radius
 
-      radius = sqrt(y**2. + z**2.)
+      radius = sqrt(x**2. + y**2.)
       call SEMinputData(radius, vel, tke, dissip )
 
 c     Simply prescribe mean inflow profile used by SEM as IC
-      Ux = vel
+      Ux = 0.
       Uy = 0.
-      Uz = 0.
+      Uz = vel
 
       return
       end
@@ -141,7 +120,7 @@ c-----------------------------------------------------------------------
 
       subroutine usrdat
       use SEM, only: xbmin, xbmax, ybmin, ybmax, zbmin, zbmax, Vb,
-     &   bbox_max, sigma_max, sigma_min, x_inlet
+     &   bbox_max, sigma_max, sigma_min, z_inlet
       implicit none
       real, external :: glmin, glmax ! defined in math.f
 
@@ -150,9 +129,8 @@ c-----------------------------------------------------------------------
       include 'INPUT_DEF' 
       include 'INPUT' ! [xyz]c
 
-
       real, parameter :: pi = 3.14159265358979323846264338327950288
-      real ymin, ymax, zmin, zmax
+      real ymin, ymax, xmin, xmax
       integer n
 
 !     to read user module parameters
@@ -161,25 +139,25 @@ c-----------------------------------------------------------------------
 c     Initialize SEM variables
       n = 8*nelv
 
-      x_inlet  = glmin(zc,n)
       ymin = glmin(yc,n)
       ymax = glmax(yc,n)
-      zmin = glmin(xc,n)
-      zmax = glmax(xc,n)
+      xmin = glmin(xc,n)
+      xmax = glmax(xc,n)
+      z_inlet  = glmin(zc,n)
       
       ! The bounding "box" (more precisely a cylinder for the pipe)
       ! is just large enough to contain the compact support of all
       ! eddies. 
-      xbmin = x_inlet - .5*sigma_max
-      xbmax = x_inlet + .5*sigma_max
+      xbmin = xmin - max(bbox_max, sigma_min)
+      xbmax = xmax + max(bbox_max, sigma_min)
       ybmin = ymin - max(bbox_max, sigma_min)
       ybmax = ymax + max(bbox_max, sigma_min)
-      zbmin = zmin - max(bbox_max, sigma_min)
-      zbmax = zmax + max(bbox_max, sigma_min)
-      Vb = (xbmax-xbmin)*ybmax**2.*pi
+      zbmin = z_inlet - .5*sigma_max
+      zbmax = z_inlet + .5*sigma_max
+      Vb = (zbmax-zbmin)*ybmax**2.*pi
 c     Vb = (xbmax-xbmin)*(ybmax-ybmin)*(zbmax-zbmin)
 
-      if (nid.eq.0) write(*,*) 'Geom:', x_inlet,ybmin,ybmax,zbmin,zbmax
+      if (nid.eq.0) write(*,*) 'Geom:',xbmin,xbmax,ybmin,ybmax,z_inlet
 
       return
       end
@@ -188,24 +166,8 @@ c-----------------------------------------------------------------------
 
       subroutine usrdat2
         implicit none
-      include 'SIZE_DEF'
-      include 'SIZE' ! nelv
-      include 'GEOM_DEF'
-      include 'GEOM' ! nelv
-
-      ! Meshes, generated with pipeMeshNek have to be rotated
-      ! Hence, the array xm1, vx, etc are indexed differently
-      ! Remember this in sem.f/avg_all.f
-
-      integer i,n 
-      real x_original
-
-      n = nx1*ny1*nz1*nelv
-      do i=1,n
-         x_original = xm1(i,1,1,1)
-         xm1(i,1,1,1) = zm1(i,1,1,1)
-         zm1(i,1,1,1) = -x_original
-      enddo
+c     Initialize SEM, once GLL points are distributed
+      call SEMinit
       return
       end
 
@@ -213,9 +175,6 @@ c-----------------------------------------------------------------------
 
       subroutine usrdat3
         implicit none
-
-c     Initialize SEM, after mesh was rotated
-        call SEMinit
       return
       end
 

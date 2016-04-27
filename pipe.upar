@@ -1,9 +1,9 @@
 &USERPAR
  /
 &AVG_LIST
- nSlices=5,
- nElperFace=256,
- xslices=0.,3.,5.,7.,10.,
+ nSlices=3, ! upper limit of 10
+ nElperFace=128,
+ zslices=0.,1.,2.,
  /
 &CHKPOINT
  CHKPTSTEP= 10,
@@ -11,9 +11,9 @@
  /
 &SEM_LIST
  neddy=5000,
- nElInlet=256,
+ nElInlet=128,
  sigma_max=0.27486,
- sigma_min=0.001,
+ sigma_min=0.0001,
  bbox_max=0.056101,
  u0=1.0,
  /

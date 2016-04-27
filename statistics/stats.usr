@@ -146,14 +146,14 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
        Tnrec  = 0
        do while (.true.)
 
-         write(pippo,'(F4.1, A, i4.4)') xslices(n), '_',  ssf
-         inputname1 = 'recordings/stat_x_'//adjustl(trim(pippo))
+         write(pippo,'(F4.1, A, i4.4)') zslices(n), '_',  ssf
+         inputname1 = 'recordings/stat_z_'//adjustl(trim(pippo))
 
 
          inquire(file=inputname1,exist=file_exists); 
          if (.NOT.file_exists) then
            if (ssf.eq.1) write(*,*) 
-     $ '!!! WARNING: failed to find input slice for x=', xslices(n)
+     $ '!!! WARNING: failed to find input slice for x=', zslices(n)
            goto 2908
          endif
 
@@ -235,8 +235,8 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
-      write(pippo,'(F4.1)') xslices(n)
-      inputname2 = 'recordings/polar_x_'//adjustl(trim(pippo))
+      write(pippo,'(F4.1)') zslices(n)
+      inputname2 = 'recordings/polar_z_'//adjustl(trim(pippo))
       open(unit=37,form='unformatted',file=inputname2) 
 
       write(val1,'(1p15e17.9)') mRey  	   	        ! Reynolds number	  

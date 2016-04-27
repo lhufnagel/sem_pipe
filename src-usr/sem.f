@@ -45,7 +45,7 @@ C
          ! extent, Volume of the virtual SEM domain
          real                :: ybmin,ybmax,zbmin,zbmax,xbmin,xbmax 
          real                :: Vb
-         real                :: x_inlet ! x value of inlet plane
+         real                :: z_inlet ! z value of inlet plane
 
          real , allocatable  :: umean_inlet(:,:,:)
          real , allocatable  :: sigma_inlet(:,:,:)
@@ -88,9 +88,9 @@ c-----------------------------------------------------------------------
 
       logical semstop
 
-      if (nElInlet.gt.lely*lelz) then
+      if (nElInlet.gt.lely*lelx) then
         if (nid.eq.0) write(*,*) 
-     $ 'ABORT IN SEMinit. Increase lely*lelz in SIZE ',nElInlet
+     $ 'ABORT IN SEMinit. Increase lely*lelx in SIZE ',nElInlet
         call exitti
       endif
 
@@ -152,22 +152,23 @@ c     Read infile
       do e=1,nelv
         eg = lglel(e)
 
-        ! NOTE that the pipe/mesh is rotated in usrdat2()
-        ! hence, the inverted indexing into ym1/zm1
-
         ! Calculate eddy size and intensity at inlet only once
+
+        write(*,*) 'rad ', sqrt(xm1(i,j,1,e)**2 + ym1(i,j,1,e)**2)
+
         if (eg.le.nElInlet) then
 
-          do j=1,lz1
-          do i=1,ly1
+          do j=1,ly1
+          do i=1,lx1
 
-          call SEMinputData(sqrt(ym1(i,j,1,e)**2 + zm1(i,j,1,e)**2),
+          call SEMinputData(sqrt(xm1(i,j,1,e)**2 + ym1(i,j,1,e)**2),
      &                   vel_interp, tke_interp, dissip_interp)
 
           sigmal = (tke_interp**1.5)/dissip_interp
           sigmal = max(.5*sigmal,sigma_min)  
-          ! Limit eddy size far away from wall. Suggested in Jarrins PhD
-          ! Not implemented in Code Saturne
+
+          ! Optional: Limit eddy size far away from wall. 
+          ! Suggested in Jarrins PhD, but not implemented in Code Saturne
           ! kappa is .41, 0.5 is pipe radius, therefore .41*.5
           ! sigmal = max(.5*min(sigmal,0.41*0.5),sigma_min)  
 
@@ -324,21 +325,20 @@ c ---- compute velocity contribution of eddies ------
 
       sqrtVn = sqrt(Vb/real(neddy))
 
-c     do i=1,nv
       do e=1,nelv
         eg = lglel(e)
-c         if (abs(xm1(1,1,1,e)-x_inlet).lt.1e-14) then
+c         if (abs(zm1(1,1,1,e)-z_inlet).lt.1e-13) then
         if (eg.le.nElInlet) then 
 
-        do j=1,lz1
-        do i=1,ly1
+        do j=1,ly1
+        do i=1,lx1
 
         ! NOTE that the pipe/mesh is rotated in usrdat2()
         ! hence, the inverted indexing into ym1/zm1
 
-           u_sem(i,j,1,e) = umean_inlet(i,j,eg)
+           u_sem(i,j,1,e) = 0
            v_sem(i,j,1,e) = 0
-           w_sem(i,j,1,e) = 0
+           w_sem(i,j,1,e) = umean_inlet(i,j,eg)
 
            do ne=1,neddy
             rrx = (xm1(i,j,1,e)-ex(ne))
@@ -405,7 +405,7 @@ c     pt    - local pointer
 c-----------------------------------------------------------------------
 c     Generate eddy location randomly in bounding box
       subroutine gen_eddy(ex,ey,ez,eps,n)
-      use SEM, only: xbmin, xbmax, ybmax 
+      use SEM, only: zbmin, zbmax, ybmax 
       implicit none
 
       real, parameter :: twoPi = 6.283185307179586476925286766
@@ -422,15 +422,18 @@ c     Generate eddy location randomly in bounding box
 
       i_l = n
 
-      rho = ybmax*sqrt(rnd_loc(0.0,1.0))  ! actual radius for origin-centered pipe
+c     Generate uniformly distributed random locations 
+c     in polar coordinates (!)
+c     ybmax contains actual radius for origin-centered pipe
+      rho = ybmax*sqrt(rnd_loc(0.0,1.0))  
       theta = rnd_loc(0.,twoPI) 
 
-      ey(i_l) = rho * cos(theta)
-      ez(i_l) = rho * sin(theta)
+      ex(i_l) = rho * cos(theta)
+      ey(i_l) = rho * sin(theta)
       if(istep.eq.0)then
-          ex(i_l) = rnd_loc(xbmin,xbmax)
+          ez(i_l) = rnd_loc(zbmin,zbmax)
       else
-          ex(i_l) = xbmin
+          ez(i_l) = zbmin
       endif       
 
       do j=1,3
@@ -490,7 +493,7 @@ c     include 'SIZE'
 c-----------------------------------------------------------------------
 c     Convect eddies and recycle by regenerating the location
       subroutine advect_recycle_eddies(ex,ey,ez,eps,n,pt)
-      use SEM, only: xbmax,u0
+      use SEM, only: zbmax,u0
       implicit none
       include 'SIZE_DEF' ! DT
       include 'SIZE' ! DT
@@ -504,10 +507,10 @@ c     Convect eddies and recycle by regenerating the location
 
       do i=1,n
         i_l = pt(i)
-        ex(i_l) = ex(i_l) + u0*DT
+        ez(i_l) = ez(i_l) + u0*DT
                             
 c     ---- recycle exiting eddies ----
-        if (ex(i_l).gt.(xbmax))then
+        if (ez(i_l).gt.(zbmax))then
           call gen_eddy(ex,ey,ez,eps,i_l)
         endif
       enddo
@@ -543,6 +546,9 @@ c     point of interest
       enddo
 
       ! bogus fallback output, to detect interpolation problems
+
+      write(*,*) ' !!! Warning !!! SEM failed at input interpolation'
+
       vel_out = -1
       tke_out = -1
       eps_out = 0.0
@@ -552,7 +558,7 @@ c     point of interest
 
 
 
-********    Below fallows random-number generation, untouched by Lhuf
+********  Below follows random-number generation, untouched by Lhuf
 ********
 c-------------------------------------------------------------------
 *******************************************************************

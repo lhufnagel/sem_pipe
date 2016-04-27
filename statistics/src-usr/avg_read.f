@@ -10,7 +10,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
          integer             :: nslices ! number of slices
          integer             :: nElperFace ! number of elements per face
-         real , allocatable  :: xslices(:)
+         real , allocatable  :: zslices(:)
       end module AVG_read
 
 
@@ -31,14 +31,14 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
       integer ierr
 
 !     namelists
-      namelist /AVG_LIST/ nSlices, nElperFace, xslices
+      namelist /AVG_LIST/ nSlices, nElperFace, zslices
 
 !-----------------------------------------------------------------------
 !     default values
-      nSlices = 5
-      allocate(xslices(nslices))
+      nSlices = 10
+      allocate(zslices(nslices))
       nelperface = 256
-      xslices = (/0.,1.,2.,5.,10./)
+c     zslices = (/0.,1.,2.,5.,10./)
 !     read the file
       ierr=0
       if (NID.eq.0) then
@@ -49,7 +49,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 !     broadcast data
       call bcast(nSlices,ISIZE)
       call bcast(nelperface,ISIZE)
-      call bcast(xslices, nSlices*WDSIZE)
+      call bcast(zslices, nSlices*WDSIZE)
 
       return
       end  subroutine AVG_param_in
@@ -70,7 +70,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
       integer ierr
 
 !     namelists
-      namelist /AVG_LIST/ nSlices, nElperFace, xslices
+      namelist /AVG_LIST/ nSlices, nElperFace, zslices
 !-----------------------------------------------------------------------
       ierr=0
       if (NID.eq.0) then

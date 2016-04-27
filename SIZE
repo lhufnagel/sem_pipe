@@ -5,7 +5,7 @@ C
       parameter (ldim=3)
       parameter (lx1=6,ly1=lx1,lz1=lx1,lelt=1600,lelv=lelt)
       parameter (lxd=9,lyd=lxd,lzd=lxd)
-      parameter (lelx=1,lely=12,lelz=12)
+      parameter (lelx=12,lely=12,lelz=1)
 c
 c     NOTE: for IBM BLUE GENE LX1,LXD has to be an even number (double hummer)
 

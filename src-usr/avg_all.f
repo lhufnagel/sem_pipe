@@ -1,7 +1,7 @@
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 C ---------------------------------------------------------------------- C
 C -------------- AVG'ing routines by AZAD   ---------------------------- C
-C -------------- quickly copied by Lorenz, added extract X-Slice ------- C
+C -------------- quickly copied by Lorenz, added extract Z-Slice ------- C
 C ---------------------------------------------------------------------- C
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
       module AVG
@@ -10,7 +10,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
          integer             :: nslices ! number of slices
          integer             :: nElperFace ! number of elements per face
-         real , allocatable  :: xslices(:)
+         real , allocatable  :: zslices(:)
       end module AVG
 
 C=======================================================================
@@ -87,8 +87,8 @@ C -------------- Define the various quantities on a 2D array ----------- C
 C ---------------------------------------------------------------------- C
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
-!     real stat_yz(ly1*lely*lz1*lelz, nstat)
-      real , allocatable :: stat_yz(:, :), w1(:)
+!     real stat_xy(ly1*lely*lz1*lelz, nstat)
+      real , allocatable :: stat_xy(:, :), w1(:)
 
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
@@ -142,8 +142,9 @@ c        call invers2(jacmi,jacm1,ntot)
         call rzero(stat,ntot*nstat)
         ! TODO why not stat_extra and stat_rot?
 
-        if (nElperFace.gt.lely*lelz) call exitti
-     $('ABORT IN avg_stat_all. Increase lely*lelz in SIZE:$',nElperFace)
+        if (nElperFace.gt.lely*lelx) call exitti
+     $('ABORT IN avg_stat_all. Increase lely*lelx in SIZE:$',nElperFace)
+        ! TODO CHECK if necessary
 
 
          nrec  = 0
@@ -174,8 +175,6 @@ c      call mappr(pm1,pr,wk1,wk2) ! map pressure to mesh 1 (vel. mesh)
 
         pmean = -surf_mean(pr,1,'W  ',ierr)
         call cadd(p0,pmean,ntot)
-
-
 
         call comp_derivat(duidxj,vx,vy,vz,ur,us,ut,vr,vs,vt,wr,ws,wt)
 
@@ -315,14 +314,14 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
       if (mod(istep,iastep).eq.0.and.istep.ge.1) then
 
-        allocate(stat_yz(ly1*lz1*nElperFace, nstat))
+        allocate(stat_xy(lx1*lz1*nElperFace, nstat))
         allocate(w1(ly1*lz1*nElperFace))
         
         if(nid.eq.0)  indts = indts + 1
 
         do k=1,nslices
 
-        call extract_x_slice(xslices(k), stat_yz, nElperFace, stat,
+        call extract_z_slice(zslices(k), stat_xy, nElperFace, stat,
      $    nstat,w1) 
         
         if(nid.eq.0) then
@@ -332,9 +331,9 @@ C ------------ Write statistics to file ----------------------------------------
 C ------------------------------------------------------------------------------- C
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C 
 
-        write(pippo,'(F4.1, A, i4.4)') xslices(k), '_',  indts
+        write(pippo,'(F4.1, A, i4.4)') zslices(k), '_',  indts
 
-        inputname1 = 'statistics/recordings/stat_x_'//
+        inputname1 = 'statistics/recordings/stat_z_'//
      $    adjustl(trim(pippo))
 
         write(6,*) inputname1
@@ -388,7 +387,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
         do i=1,nstat
-          write(33) (stat_yz(j,i),j=1,m)  
+          write(33) (stat_xy(j,i),j=1,m)  
         enddo
 
         close(33)
@@ -396,7 +395,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         endif
         enddo
 
-        deallocate(stat_yz)
+        deallocate(stat_xy)
         deallocate(w1)
 
         nrec = 0
@@ -431,14 +430,14 @@ c-----------------------------------------------------------------------
       integer ierr
 
 !     namelists
-      namelist /AVG_LIST/ nSlices, nElperFace, xslices
+      namelist /AVG_LIST/ nSlices,nElperFace, zslices
 
 !-----------------------------------------------------------------------
 !     default values
-      nSlices = 5
-      allocate(xslices(nslices))
+      nSlices = 10
       nelperface = 256
-      xslices = (/0.,1.,2.,5.,10./)
+c     zslices = (/0.,1.,2.,5.,10./)
+      allocate(zslices(nSlices))
 !     read the file
       ierr=0
       if (NID.eq.0) then
@@ -449,7 +448,7 @@ c-----------------------------------------------------------------------
 !     broadcast data
       call bcast(nSlices,ISIZE)
       call bcast(nelperface,ISIZE)
-      call bcast(xslices, nSlices*WDSIZE)
+      call bcast(zslices, nSlices*WDSIZE)
 
       return
       end  subroutine AVG_param_in
@@ -470,7 +469,7 @@ c-----------------------------------------------------------------------
       integer ierr
 
 !     namelists
-      namelist /AVG_LIST/ nSlices, nElperFace, xslices
+      namelist /AVG_LIST/ nSlices, nElperFace, zslices
 !-----------------------------------------------------------------------
       ierr=0
       if (NID.eq.0) then
@@ -812,7 +811,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 c-----------------------------------------------------------------------
 
         ! extract the given x-value (must be mesh aligned)
-      subroutine extract_x_slice(x_val,stat_yz,nelpFac,stat3d,nstat,w1)
+      subroutine extract_z_slice(z_val,stat_xy,nelpFac,stat3d,nstat,w1)
         implicit none
 
       include 'SIZE_DEF'
@@ -823,15 +822,12 @@ c-----------------------------------------------------------------------
       include 'PARALLEL'
 
       integer, intent(in) :: nelpFac, nstat
-      real, intent(in) :: x_val, stat3d(lx1,ly1,lz1, lelv,nstat)
+      real, intent(in) :: z_val, stat3d(lx1,ly1,lz1, lelv,nstat)
       real, intent(out) ::  w1(ly1*lz1*nelpFac)
-      real, intent(out) :: stat_yz(ly1,lz1,nelpFac, nstat)
+      real, intent(out) :: stat_xy(lx1,ly1,nelpFac, nstat)
       integer e,eg,ex,n, j, k
 
-      call rzero(stat_yz,lz1*ly1*nelpFac*nstat)
-
-      ! NOTE that the pipe/mesh is rotated in usrdat2()
-      ! hence, the inverted indexing into stat3d
+      call rzero(stat_xy,lx1*ly1*nelpFac*nstat)
 
       do n=1,nstat
       do e=1,nelv
@@ -839,16 +835,16 @@ c-----------------------------------------------------------------------
         ex = mod(eg-1,nelpFac)+1 ! avoid to access element 0 ..
 
         ! (+- floating precision)
-        if (abs(x_val - xm1(1,1,1,e)) .lt. 1.e-14) then
-          do k=1,lz1
-          do j=1,ly1
-            stat_yz(j,k,ex,n) = stat3d(j,k,1,e,n)
+        if (abs(z_val - zm1(1,1,1,e)) .lt. 1.e-14) then
+          do k=1,ly1
+          do j=1,lx1
+            stat_xy(j,k,ex,n) = stat3d(j,k,1,e,n)
           enddo
           enddo
         endif
       enddo
-      call gop(stat_yz(1,1,1,n),w1,'+  ', nelpFac*ly1*lz1)
+      call gop(stat_xy(1,1,1,n),w1,'+  ', nelpFac*lx1*ly1)
       enddo
 
       return
-      end subroutine extract_x_slice
+      end subroutine extract_z_slice
