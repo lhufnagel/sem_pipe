@@ -2,7 +2,7 @@
  /
 &AVG_LIST
  nSlices=5,
- nElperFace=320,
+ nElperFace=256,
  xslices=0.,3.,5.,7.,10.,
  /
 &CHKPOINT
@@ -11,9 +11,9 @@
  /
 &SEM_LIST
  neddy=5000,
- nElInlet=144,
+ nElInlet=256,
  sigma_max=0.27486,
- sigma_min=0.01,
+ sigma_min=0.001,
  bbox_max=0.056101,
  u0=1.0,
  /
