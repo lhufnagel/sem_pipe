@@ -35,11 +35,23 @@ c-----------------------------------------------------------------------
       include 'SIZE'  ! L[XYZ]1,LELV,NID
       include 'TSTEP_DEF'
       include 'TSTEP' ! ISTEP,IOSTEP
-      include 'SOLN_DEF'
+      include 'SOLN_DEF'      
       include 'SOLN'  ! V[XYZ],V[XYZ]P
 
+      real, external :: dnekclock ! defined in math.f
+
+      real rtime, tic
+      save rtime
+      data rtime  /0./
+
       ! SEM
+
+      tic=dnekclock()
       call synthetic_eddies
+      rtime = rtime + (dnekclock()-tic)
+
+      if(istep.eq.nsteps.and.nid.eq.0) 
+     $  write(6,'(A,e15.4)') 'synth. eddy method time = ', rtime
 
       ! Compute lambda_2 (stored in temperature field)
       if (mod(ISTEP,IOSTEP).eq.0.and. istep.gt.0) then
