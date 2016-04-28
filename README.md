@@ -14,8 +14,10 @@ The SEM is implemented to generate nonuniform, isotropic turbulence, like in cas
     * `u0` The bulk mean velocity
     * `Vb`, `z_inlet`, and `ybmax` are be set in `usrdat()`. They are the volume of the convective box/cylinder, the `z` coordinate of the inlet and the _radius_
  
-As of now, the SEM is only implemented to generate a turbulent signal in z-positive direction (x-positive was before [commit c820c3](../../commit/c820c3d9f9ae82491efa70bcbb80dae23970e9b5). It should however be straightforward to change the relevant code.The first elements in the `pipe.rea` should be the face, at which the SEM inflow is placed. This enables us to precompute eddy-size once for the whole simulation (using linear interpolation from `sem_input.txt`) instead of calculate the eddy-size at each time step. An unoptmized version without this limitation shoud be in [commit aaa095](../../commit/aaa095)
+As of now, the SEM is only implemented to generate a turbulent signal in z-positive direction (x-positive was before [commit c820c3](../../commit/c820c3d9f9ae82491efa70bcbb80dae23970e9b5) ). It should however be straightforward to change the relevant code.The first elements in the `pipe.rea` should be the face, at which the SEM inflow is placed. This enables us to precompute eddy-size once for the whole simulation (using linear interpolation from `sem_input.txt`) instead of calculate the eddy-size at each time step. An unoptmized version without this limitation shoud be in [commit aaa095](../../commit/aaa095)
 
+**Future outlook**
+In the [SEM as implemented in Code Saturne by Jarrin](http://code-saturne.org/viewvc/saturne/trunk/src/turb/cs_les_inflow.c?view=markup), there is a `rescale_flowrate`, which normalizes the mass-flux of the fluctuations s.t. they add zero-bulk-net zero to the mean flow. This is obviously especially relevant for a small number of eddies.
 
 ## Workflow
 * Create a cartesian pipe-mesh with positive z as downstream-direction. Typically, the mesh generator [pipeMeshNek by Jacopo](https://bitbucket.org/jacopo-canton/pipemeshnek) was used  

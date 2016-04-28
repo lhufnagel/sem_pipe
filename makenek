@@ -4,6 +4,7 @@
 
 # source path 
 SOURCE_ROOT="`readlink -f $HOME/nek5_svn/trunk/nek`" 
+SOURCE_ROOT2="$SOURCE_ROOT/cmt" 
 
 # Fortran compiler
 if  `uname -a | grep -q -i beskow`; then
