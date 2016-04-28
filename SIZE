@@ -5,7 +5,7 @@ C
       parameter (ldim=3)
       parameter (lx1=6,ly1=lx1,lz1=lx1,lelt=1600,lelv=lelt)
       parameter (lxd=9,lyd=lxd,lzd=lxd)
-      parameter (lelx=12,lely=12,lelz=1)
+      parameter (lelx=1,lely=1,lelz=1)
 c
 c     NOTE: for IBM BLUE GENE LX1,LXD has to be an even number (double hummer)
 
@@ -114,3 +114,13 @@ c automatically added by makenek
 
 c automatically added by makenek
       common/IOFLAG/nio  ! for logfile verbosity control
+
+c automatically added by makenek
+      integer toteq
+      parameter(toteq = 1  ) ! Number of conserved variables 
+c IFCMT=FALSE  then toteq=1
+
+c automatically added by makenek
+      integer lelcmt
+      parameter(lelcmt = 1  ) ! # of cmt elements 
+c IFCMT=FALSE  then lelcmt=1

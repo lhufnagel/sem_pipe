@@ -1,7 +1,4 @@
-% Short script, to generate the sem_input.txt file for the pipe-SEM.
-% Herefore, the DNS-data by George is used.
-
-ref = importdata('180_Re_1.dat'); % El Khoury data
+ref = importdata('180_Re_1.dat');
 rr_budg = importdata('180_RR_Budget.dat'); % El Khoury data
 tt_budg = importdata('180_TT_Budget.dat'); % El Khoury data
 zz_budg = importdata('180_ZZ_Budget.dat'); % El Khoury data
@@ -45,7 +42,6 @@ fprintf(fileID, '%d\n',length(r));
 fprintf(fileID, '%1.16E   %1.16E   %1.16E   %1.16E\n',[r,Umean,ref_k,ref_eps]');
 fclose(fileID);
 
-%from here on, only plotting
 
 ref_r = ref.data(:,2); % Plus units!
 sigma=ref_k.^(3./2.)./ref_eps;
@@ -54,6 +50,10 @@ sigma_max
 
 [max_y,r_pos]=max(r+.5*sigma);
 bbox_max = max_y-radius
+if (ref_r(r_pos) < 10)
+    warning(['There will be no eddies in SEM below y+ < 10, but the bounding-box' ...
+    ' maximum stems from an eddy in this region. Adapt SEM code ..']);
+end
 
 clf;
 subplot(2,1,1);
@@ -68,14 +68,6 @@ l.Location='northwest';
 plot(ref_r(maxi),sigma_max,'o' );
 text(ref_r(maxi)*1.05 ,sigma_max*1.05, ['\sigma_{max} = ' num2str(sigma_max)]);
 
-%visc = ref_r;
-%visc = visc(visc < 30);
-%%semilogx(visc,visc,'--');
-%
-%loglaw = ref_r;
-%loglaw = loglaw(loglaw > 5);
-%%semilogx(loglaw,1/0.41*log(loglaw)+5.2,'--');
-
 xlabel('r^+'); 
 ylabel('[SI]');
 grid on;
@@ -83,8 +75,6 @@ grid on;
 hold off;
 
 subplot(2,1,2);
-%non logarithmic
-
 hold on;
 plot(ref_r,sigma);
 plot(ref_r,min(sigma,0.41*radius));
@@ -99,3 +89,4 @@ ylabel('[SI]');
 grid on;
 %
 hold off;
+

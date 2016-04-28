@@ -30,8 +30,10 @@ C
          ! In the pipe-case the mesh is created accordingly, 
          ! and nElInlet = nelperface
 
-         real                :: sigma_min 
-         ! lower eddy size bound  (due to mesh, usually)
+         real                :: yplus_cutoff 
+         ! yplus above which no eddies are generated, to maintain
+         ! divergence freedom. 
+         ! Typically this should be 10 delta+ from the wall.
          real                :: sigma_max 
          ! upper eddy size bound (due to k&eps)
          real                :: bbox_max
@@ -82,17 +84,11 @@ c-----------------------------------------------------------------------
       include 'PARALLEL_DEF'
       include 'PARALLEL'
 
-      real vel_interp, tke_interp, dissip_interp, sigmal
+      real vel_interp, tke_interp, dissip_interp, sigmal, radius
       integer fid, nlines
       integer e, i, j, eg
 
       logical semstop
-
-      if (nElInlet.gt.lely*lelx) then
-        if (nid.eq.0) write(*,*) 
-     $ 'ABORT IN SEMinit. Increase lely*lelx in SIZE ',nElInlet
-        call exitti
-      endif
 
       if (nElInlet.ne.nElperFace) then
         if (nid.eq.0) write(*,*) 
@@ -157,21 +153,26 @@ c     Read infile
 
           do j=1,ly1
           do i=1,lx1
+          
+          radius = sqrt(xm1(i,j,1,e)**2 + ym1(i,j,1,e)**2)
 
-          call SEMinputData(sqrt(xm1(i,j,1,e)**2 + ym1(i,j,1,e)**2),
-     &                   vel_interp, tke_interp, dissip_interp)
+          call SEMinputData(radius,vel_interp,tke_interp,dissip_interp)
 
           sigmal = (tke_interp**1.5)/dissip_interp
-          sigmal = max(.5*sigmal,sigma_min)  
+          sigmal = max(.5*sigmal, 1e-8)  ! avoid numerical instability
 
           ! Optional: Limit eddy size far away from wall. 
           ! Suggested in Jarrins PhD, but not implemented in Code Saturne
           ! kappa is .41, 0.5 is pipe radius, therefore .41*.5
-          ! sigmal = max(.5*min(sigmal,0.41*0.5),sigma_min)  
+          ! sigmal = max(.5*min(sigmal,0.41*0.5),1e-8)  
 
           sigma_inlet(i,j,eg)     = sigmal
-          intensity_inlet(i,j,eg) = sqrt(2./3.*tke_interp)
           umean_inlet(i,j,eg)     = vel_interp
+          if (radius > yplus_cutoff) then
+            intensity_inlet(i,j,eg) = 0.0d0
+          else
+            intensity_inlet(i,j,eg) = sqrt(2./3.*tke_interp)
+          endif
 
           enddo
           enddo
@@ -184,7 +185,7 @@ c-----------------------------------------------------------------------
 
 !     read parameters SEM
       subroutine SEM_param_in(fid)
-        use SEM, only: nEddy, sigma_min, nElInlet, 
+        use SEM, only: nEddy, yplus_cutoff, nElInlet, 
      $                 sigma_max, bbox_max, u0
       implicit none
 
@@ -200,13 +201,13 @@ c-----------------------------------------------------------------------
       integer ierr
 
 !     namelists
-      namelist /SEM_list/ nEddy, nElInlet, sigma_min,
+      namelist /SEM_list/ nEddy, nElInlet, yplus_cutoff,
      $        sigma_max, bbox_max, u0
 !-----------------------------------------------------------------------
 !     default values
       nEddy = 5000
       nElInlet = 256
-      sigma_min = 0.01
+      yplus_cutoff = 0.4
       sigma_max = 0.25
       bbox_max = 0.05
       u0 = 1.0
@@ -220,7 +221,7 @@ c-----------------------------------------------------------------------
 !     broadcast data
       call bcast(nEddy,ISIZE)
       call bcast(nElInlet,ISIZE)
-      call bcast(sigma_min, WDSIZE)
+      call bcast(yplus_cutoff, WDSIZE)
       call bcast(sigma_max, WDSIZE)
       call bcast(bbox_max, WDSIZE)
       call bcast(u0, WDSIZE)
@@ -230,7 +231,7 @@ c-----------------------------------------------------------------------
 !***********************************************************************
 !     write parameters checkpoint
       subroutine SEM_param_out(fid)
-        use SEM, only: nEddy, sigma_min, nElInlet, 
+        use SEM, only: nEddy, yplus_cutoff, nElInlet, 
      $                 sigma_max, bbox_max, u0
       implicit none
 
@@ -244,7 +245,7 @@ c-----------------------------------------------------------------------
       integer ierr
 
 !     namelists
-      namelist /SEM_list/ nEddy, nElInlet, sigma_min,
+      namelist /SEM_list/ nEddy, nElInlet, yplus_cutoff,
      $        sigma_max, bbox_max, u0
 !-----------------------------------------------------------------------
       ierr=0

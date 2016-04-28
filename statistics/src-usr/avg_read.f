@@ -10,6 +10,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
          integer             :: nslices ! number of slices
          integer             :: nElperFace ! number of elements per face
+         real                :: delta_time_avg
          real , allocatable  :: zslices(:)
       end module AVG_read
 
@@ -31,11 +32,11 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
       integer ierr
 
 !     namelists
-      namelist /AVG_LIST/ nSlices, nElperFace, zslices
+      namelist /AVG_LIST/ nSlices,nElperFace,delta_time_avg, zslices
 
 !-----------------------------------------------------------------------
 !     default values
-      nSlices = 10
+      nSlices = 50
       allocate(zslices(nslices))
       nelperface = 256
 c     zslices = (/0.,1.,2.,5.,10./)
@@ -49,6 +50,7 @@ c     zslices = (/0.,1.,2.,5.,10./)
 !     broadcast data
       call bcast(nSlices,ISIZE)
       call bcast(nelperface,ISIZE)
+      call bcast(delta_time_avg,WDSIZE)
       call bcast(zslices, nSlices*WDSIZE)
 
       return
@@ -70,7 +72,7 @@ c     zslices = (/0.,1.,2.,5.,10./)
       integer ierr
 
 !     namelists
-      namelist /AVG_LIST/ nSlices, nElperFace, zslices
+      namelist /AVG_LIST/ nSlices,nElperFace,delta_time_avg, zslices
 !-----------------------------------------------------------------------
       ierr=0
       if (NID.eq.0) then

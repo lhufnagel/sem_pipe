@@ -9,6 +9,8 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
          save
 
          integer             :: nslices ! number of slices
+         real                :: delta_time_avg 
+         ! average every time interval
          integer             :: nElperFace ! number of elements per face
          real , allocatable  :: zslices(:)
       end module AVG
@@ -30,9 +32,6 @@ C=======================================================================
       include 'INPUT_DEF'
       include 'INPUT'
 
-      include 'ZPER_DEF'
-      include 'ZPER'   ! for nelx, nely, nelz
-
       real, external :: glmin, glmax ! defined in math.f
       real, external :: surf_mean ! defined in subs1.f
 
@@ -47,13 +46,12 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
       integer nstat, nstat_extra, iastep, i, j, k,m, ierr
-      integer my, mz, ntot
+      integer ntot
       parameter (nstat = 71) ! Number of statistical fields to be saved
       parameter (nstat_extra = 9) !('new 9 terms for curved pipe due to flatness')
 
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
-      common /avgcmnr/ atime,timel
       real p0, pmean(lx1,ly1,lz1,lelt)
       common /c_p0/ p0(lx1,ly1,lz1,lelt)
 
@@ -98,10 +96,11 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
       data    icalld  /0/
 
       real atime,timel,times
+      common /avgcmnr/ atime,timel
 
       integer indts, nrec
       save    indts, nrec
-      save    times
+      save    times 
       save    domain_x, domain_y, domain_z
 
       character*80 pippo
@@ -111,18 +110,10 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
-
-      nelx = 1       ! Number of elements in x,y, and z directions. ! TODO TRY AND MAKE THIS SMARTER
-      nely = nElperFace ! NOTE, this may vary from one mesh to the next.
-      nelz = 1       !
-
       ntot    = nx1*ny1*nz1*nelv
       
       if (icalld.eq.0) then
         icalld = icalld + 1
-
-c     ! Should be done already in geom1()/ic.f 
-c        call invers2(jacmi,jacm1,ntot)
 
         atime  = 0.
         timel  = time
@@ -142,11 +133,6 @@ c        call invers2(jacmi,jacm1,ntot)
         call rzero(stat,ntot*nstat)
         ! TODO why not stat_extra and stat_rot?
 
-        if (nElperFace.gt.lely*lelx) call exitti
-     $('ABORT IN avg_stat_all. Increase lely*lelx in SIZE:$',nElperFace)
-        ! TODO CHECK if necessary
-
-
          nrec  = 0
          times = time
 
@@ -159,83 +145,83 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
       ! fist time avg_stat_all is called this is zero
       dtime = time  - timel
 
+      if (dtime .lt. delta_time_avg) return
+
       iastep = param(68)
       if  (iastep.eq.0) iastep=param(15)   ! same as iostep
       if  (iastep.eq.0) iastep=500
 
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C  
      
-      if (istep.ge.1) then ! closed in l. 1605
-
-        nrec  = nrec + 1
-        atime = atime + dtime
+      atime = atime + dtime
 
 c      call mappr(pm1,pr,wk1,wk2) ! map pressure to mesh 1 (vel. mesh) 
-        call copy(p0,pr,ntot)
+      call copy(p0,pr,ntot)
 
-        pmean = -surf_mean(pr,1,'W  ',ierr)
-        call cadd(p0,pmean,ntot)
+      pmean = -surf_mean(pr,1,'W  ',ierr)
+      call cadd(p0,pmean,ntot)
 
-        call comp_derivat(duidxj,vx,vy,vz,ur,us,ut,vr,vs,vt,wr,ws,wt)
+      call comp_derivat(duidxj,vx,vy,vz,ur,us,ut,vr,vs,vt,wr,ws,wt)
 
-        if (atime.ne.0..and.dtime.ne.0.) then ! closed in l. 1606
-          beta  = dtime/atime
-          alpha = 1.-beta
+      if (atime.ne.0.) then ! closed in l. 1606
+        nrec  = nrec + 1
+        beta  = dtime/atime
+        alpha = 1.-beta
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C 
 
-      call avg1(stat(1,1),vx,alpha,beta,ntot,'velx',ifverbose)     ! <u>
-      call avg1(stat(1,2),vy,alpha,beta,ntot,'vely',ifverbose)     ! <v>
-      call avg1(stat(1,3),vz,alpha,beta,ntot,'velz',ifverbose)     ! <w>
-      call avg1(stat(1,4),p0,alpha,beta,ntot,'pres',ifverbose)     ! <p>
+        call avg1(stat(1,1),vx,alpha,beta,ntot,'velx',ifverbose)     ! <u>
+        call avg1(stat(1,2),vy,alpha,beta,ntot,'vely',ifverbose)     ! <v>
+        call avg1(stat(1,3),vz,alpha,beta,ntot,'velz',ifverbose)     ! <w>
+        call avg1(stat(1,4),p0,alpha,beta,ntot,'pres',ifverbose)     ! <p>
 
-      call avg2(stat(1,5),vx,alpha,beta,ntot,'urms',ifverbose)     ! <uu> (u: instantaneous) 
-      call avg2(stat(1,6),vy,alpha,beta,ntot,'vrms',ifverbose)     ! <vv> (v: instantaneous)
-      call avg2(stat(1,7),vz,alpha,beta,ntot,'wrms',ifverbose)     ! <ww> (w: instantaneous)
-      call avg2(stat(1,8),p0,alpha,beta,ntot,'prms',ifverbose)     ! <pp> (p: instantaneous)
+        call avg2(stat(1,5),vx,alpha,beta,ntot,'urms',ifverbose)     ! <uu> (u: instantaneous) 
+        call avg2(stat(1,6),vy,alpha,beta,ntot,'vrms',ifverbose)     ! <vv> (v: instantaneous)
+        call avg2(stat(1,7),vz,alpha,beta,ntot,'wrms',ifverbose)     ! <ww> (w: instantaneous)
+        call avg2(stat(1,8),p0,alpha,beta,ntot,'prms',ifverbose)     ! <pp> (p: instantaneous)
 
-      call avg3(stat(1,9),vx,vy,alpha,beta,ntot,'uvrm',ifverbose)  ! <uv> (u, v: instantaneous)
-      call avg3(stat(1,10),vy,vz,alpha,beta,ntot,'vwrm',ifverbose) ! <vw> (v, w: instantaneous)
-      call avg3(stat(1,11),vz,vx,alpha,beta,ntot,'wurm',ifverbose) ! <uw> (u, w: instantaneous)
+        call avg3(stat(1,9),vx,vy,alpha,beta,ntot,'uvrm',ifverbose)  ! <uv> (u, v: instantaneous)
+        call avg3(stat(1,10),vy,vz,alpha,beta,ntot,'vwrm',ifverbose) ! <vw> (v, w: instantaneous)
+        call avg3(stat(1,11),vz,vx,alpha,beta,ntot,'wurm',ifverbose) ! <uw> (u, w: instantaneous)
 
 
-      call avg4(stat(1,12),vx,p0,alpha,beta,ntot,'pu')   ! <pu> (p, u: instantaneous)
-      call avg4(stat(1,13),vy,p0,alpha,beta,ntot,'pv')   ! <pv> (p, v: instantaneous)           
-      call avg4(stat(1,14),vz,p0,alpha,beta,ntot,'pw')   ! <pw> (p, w: instantaneous)
+        call avg4(stat(1,12),vx,p0,alpha,beta,ntot,'pu')   ! <pu> (p, u: instantaneous)
+        call avg4(stat(1,13),vy,p0,alpha,beta,ntot,'pv')   ! <pv> (p, v: instantaneous)           
+        call avg4(stat(1,14),vz,p0,alpha,beta,ntot,'pw')   ! <pw> (p, w: instantaneous)
 
-      call avg5(stat(1,15),p0,duidxj,alpha,beta,ntot,'pux') ! <pdudx> (p, dudx: instantaneous) 
-      call avg5(stat(1,16),p0,duidxj,alpha,beta,ntot,'puy') ! <pdudy> (p, dudx: instantaneous) 
-      call avg5(stat(1,17),p0,duidxj,alpha,beta,ntot,'puz') ! <pdudz> (p, dudx: instantaneous)
+        call avg5(stat(1,15),p0,duidxj,alpha,beta,ntot,'pux') ! <pdudx> (p, dudx: instantaneous) 
+        call avg5(stat(1,16),p0,duidxj,alpha,beta,ntot,'puy') ! <pdudy> (p, dudx: instantaneous) 
+        call avg5(stat(1,17),p0,duidxj,alpha,beta,ntot,'puz') ! <pdudz> (p, dudx: instantaneous)
 
-      call avg5(stat(1,18),p0,duidxj,alpha,beta,ntot,'pvx') ! <pdvdx> (p, dvdx: instantaneous) 
-      call avg5(stat(1,19),p0,duidxj,alpha,beta,ntot,'pvy') ! <pdvdy> (p, dvdy: instantaneous)
-      call avg5(stat(1,20),p0,duidxj,alpha,beta,ntot,'pvz') ! <pdvdz> (p, dudz: instantaneous)   
+        call avg5(stat(1,18),p0,duidxj,alpha,beta,ntot,'pvx') ! <pdvdx> (p, dvdx: instantaneous) 
+        call avg5(stat(1,19),p0,duidxj,alpha,beta,ntot,'pvy') ! <pdvdy> (p, dvdy: instantaneous)
+        call avg5(stat(1,20),p0,duidxj,alpha,beta,ntot,'pvz') ! <pdvdz> (p, dudz: instantaneous)   
 
-      call avg5(stat(1,21),p0,duidxj,alpha,beta,ntot,'pwx') ! <pdwdx> (p, dwdx: instantaneous) 
-      call avg5(stat(1,22),p0,duidxj,alpha,beta,ntot,'pwy') ! <pdwdy> (p, dwdy: instantaneous)
-      call avg5(stat(1,23),p0,duidxj,alpha,beta,ntot,'pwz') ! <pdwdz> (p, dwdz: instantaneous)
+        call avg5(stat(1,21),p0,duidxj,alpha,beta,ntot,'pwx') ! <pdwdx> (p, dwdx: instantaneous) 
+        call avg5(stat(1,22),p0,duidxj,alpha,beta,ntot,'pwy') ! <pdwdy> (p, dwdy: instantaneous)
+        call avg5(stat(1,23),p0,duidxj,alpha,beta,ntot,'pwz') ! <pdwdz> (p, dwdz: instantaneous)
 
-      call avg6(stat(1,24),vx,vx,vx,alpha,beta,ntot,'u3')    ! <uuu> (u: instantaneous) 
-      call avg6(stat(1,25),vy,vy,vy,alpha,beta,ntot,'v3')    ! <vvv> (v: instantaneous) 
-      call avg6(stat(1,26),vz,vz,vz,alpha,beta,ntot,'w3')    ! <www> (w: instantaneous) 
-      call avg6(stat(1,27),p0,p0,p0,alpha,beta,ntot,'p3')    ! <ppp> (p: instantaneous) 
+        call avg6(stat(1,24),vx,vx,vx,alpha,beta,ntot,'u3')    ! <uuu> (u: instantaneous) 
+        call avg6(stat(1,25),vy,vy,vy,alpha,beta,ntot,'v3')    ! <vvv> (v: instantaneous) 
+        call avg6(stat(1,26),vz,vz,vz,alpha,beta,ntot,'w3')    ! <www> (w: instantaneous) 
+        call avg6(stat(1,27),p0,p0,p0,alpha,beta,ntot,'p3')    ! <ppp> (p: instantaneous) 
 
-      call avg6(stat(1,28),vx,vx,vy,alpha,beta,ntot,'u2v')   ! <uuv> (u, v: instantaneous) 
-      call avg6(stat(1,29),vx,vx,vz,alpha,beta,ntot,'u2w')   ! <uuw> (u, w: instantaneous)  
-      call avg6(stat(1,30),vy,vy,vx,alpha,beta,ntot,'v2v')   ! <vvu> (v, u: instantaneous)	
-      call avg6(stat(1,31),vy,vy,vz,alpha,beta,ntot,'v2w')   ! <vvw> (v, w: instantaneous) 
+        call avg6(stat(1,28),vx,vx,vy,alpha,beta,ntot,'u2v')   ! <uuv> (u, v: instantaneous) 
+        call avg6(stat(1,29),vx,vx,vz,alpha,beta,ntot,'u2w')   ! <uuw> (u, w: instantaneous)  
+        call avg6(stat(1,30),vy,vy,vx,alpha,beta,ntot,'v2v')   ! <vvu> (v, u: instantaneous)	
+        call avg6(stat(1,31),vy,vy,vz,alpha,beta,ntot,'v2w')   ! <vvw> (v, w: instantaneous) 
 
-      call avg6(stat(1,32),vz,vz,vx,alpha,beta,ntot,'w2u')   ! <wwu> (w, u: instantaneous)
-      call avg6(stat(1,33),vz,vz,vy,alpha,beta,ntot,'w2v')   ! <wwv> (w, v: instantaneous)
-      call avg6(stat(1,34),vx,vy,vz,alpha,beta,ntot,'uvw')   ! <uvw> (u, v, w: instantaneous) 	
+        call avg6(stat(1,32),vz,vz,vx,alpha,beta,ntot,'w2u')   ! <wwu> (w, u: instantaneous)
+        call avg6(stat(1,33),vz,vz,vy,alpha,beta,ntot,'w2v')   ! <wwv> (w, v: instantaneous)
+        call avg6(stat(1,34),vx,vy,vz,alpha,beta,ntot,'uvw')   ! <uvw> (u, v, w: instantaneous) 	
 
-      call avg8(stat(1,35),vx,vx,vx,vx,alpha,beta,ntot,'u4')      ! <uuuu> (u: instantaneous)     
-      call avg8(stat(1,36),vy,vy,vy,vy,alpha,beta,ntot,'v4')      ! <vvvv> (v: instantaneous)
-      call avg8(stat(1,37),vz,vz,vz,vz,alpha,beta,ntot,'w4')      ! <wwww> (w: instantaneous)	 
-      call avg8 (stat(1,38),p0,p0,p0,p0,alpha,beta,ntot,'p4')     ! <pppp> (p: instantaneous) 
+        call avg8(stat(1,35),vx,vx,vx,vx,alpha,beta,ntot,'u4')      ! <uuuu> (u: instantaneous)     
+        call avg8(stat(1,36),vy,vy,vy,vy,alpha,beta,ntot,'v4')      ! <vvvv> (v: instantaneous)
+        call avg8(stat(1,37),vz,vz,vz,vz,alpha,beta,ntot,'w4')      ! <wwww> (w: instantaneous)	 
+        call avg8 (stat(1,38),p0,p0,p0,p0,alpha,beta,ntot,'p4')     ! <pppp> (p: instantaneous) 
 
-      call avg8(stat(1,39),vx,vx,vx,vy,alpha,beta,ntot,'u4')      ! <uuuv> (u: instantaneous)     
-      call avg8(stat(1,40),vx,vx,vy,vy,alpha,beta,ntot,'v4')      ! <uuvv> (v: instantaneous)
-      call avg8(stat(1,41),vx,vy,vy,vy,alpha,beta,ntot,'w4')      ! <uvvv> (w: instantaneous)	 
+        call avg8(stat(1,39),vx,vx,vx,vy,alpha,beta,ntot,'u4')      ! <uuuv> (u: instantaneous)     
+        call avg8(stat(1,40),vx,vx,vy,vy,alpha,beta,ntot,'v4')      ! <uuvv> (v: instantaneous)
+        call avg8(stat(1,41),vx,vy,vy,vy,alpha,beta,ntot,'w4')      ! <uvvv> (w: instantaneous)	 
 
 c     TODO reactivate
 cC%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C 
@@ -261,63 +247,60 @@ c      call avg8(stat_extra(1,9),vx,vy,vz,vz,alpha,beta,ntot,'w4',
 c     $        ifverbose)                                           ! <uvww> (u: instantaneous)
 cC%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C 
 
-      call avg7(stat(1,42),duidxj,alpha,beta,ntot,'e11')   ! e11: <d2u2/dx2 + d2u2/dy2 + d2u2/dz2> (u: instantaneous)
-      call avg7(stat(1,43),duidxj,alpha,beta,ntot,'e22')   ! e22: <d2v2/dx2 + d2v2/dy2 + d2v2/dz2> (v: instantaneous) 
-      call avg7(stat(1,44),duidxj,alpha,beta,ntot,'e33')   ! e33: <d2w2/dx2 + d2w2/dy2 + d2w2/dz2> (w: instantaneous)
+        call avg7(stat(1,42),duidxj,alpha,beta,ntot,'e11')   ! e11: <d2u2/dx2 + d2u2/dy2 + d2u2/dz2> (u: instantaneous)
+        call avg7(stat(1,43),duidxj,alpha,beta,ntot,'e22')   ! e22: <d2v2/dx2 + d2v2/dy2 + d2v2/dz2> (v: instantaneous) 
+        call avg7(stat(1,44),duidxj,alpha,beta,ntot,'e33')   ! e33: <d2w2/dx2 + d2w2/dy2 + d2w2/dz2> (w: instantaneous)
 
-      call avg7(stat(1,45),duidxj,alpha,beta,ntot,'e12')   ! e12: <du/dx.dv/dx + du/dy.dv/dy + du/dz.dv/dz> (u, v: instantaneous)       
-      call avg7(stat(1,46),duidxj,alpha,beta,ntot,'e13')   ! e13: <du/dx.dw/dx + du/dy.dw/dy + du/dz.dw/dz> (u, w: instantaneous) 
-      call avg7(stat(1,47),duidxj,alpha,beta,ntot,'e23')   ! e23: <dv/dx.dw/dx + dv/dy.dw/dy + dv/dz.dw/dz> (v, w: instantaneous) 
+        call avg7(stat(1,45),duidxj,alpha,beta,ntot,'e12')   ! e12: <du/dx.dv/dx + du/dy.dv/dy + du/dz.dv/dz> (u, v: instantaneous)       
+        call avg7(stat(1,46),duidxj,alpha,beta,ntot,'e13')   ! e13: <du/dx.dw/dx + du/dy.dw/dy + du/dz.dw/dz> (u, w: instantaneous) 
+        call avg7(stat(1,47),duidxj,alpha,beta,ntot,'e23')   ! e23: <dv/dx.dw/dx + dv/dy.dw/dy + dv/dz.dw/dz> (v, w: instantaneous) 
 
-      call avg5(stat(1,48),p0,duidxj,alpha,beta,ntot,'omz') ! <omz>
-      call avg5(stat(1,49),p0,duidxj,alpha,beta,ntot,'ozz') ! <omz*omz>
+        call avg5(stat(1,48),p0,duidxj,alpha,beta,ntot,'omz') ! <omz>
+        call avg5(stat(1,49),p0,duidxj,alpha,beta,ntot,'ozz') ! <omz*omz>
 
-      call avg5(stat(1,50),p0,duidxj,alpha,beta,ntot,'aaa') ! <dw/dx*dw/dx>
-      call avg5(stat(1,51),p0,duidxj,alpha,beta,ntot,'bbb') ! <dw/dy*dw/dy>
-      call avg5(stat(1,52),p0,duidxj,alpha,beta,ntot,'ccc') ! <dw/dx*dw/dy>
+        call avg5(stat(1,50),p0,duidxj,alpha,beta,ntot,'aaa') ! <dw/dx*dw/dx>
+        call avg5(stat(1,51),p0,duidxj,alpha,beta,ntot,'bbb') ! <dw/dy*dw/dy>
+        call avg5(stat(1,52),p0,duidxj,alpha,beta,ntot,'ccc') ! <dw/dx*dw/dy>
 
-      call avg5(stat(1,53),p0,duidxj,alpha,beta,ntot,'ddd') ! <du/dx*du/dx>
-      call avg5(stat(1,54),p0,duidxj,alpha,beta,ntot,'eee') ! <du/dy*du/dy>
-      call avg5(stat(1,55),p0,duidxj,alpha,beta,ntot,'fff') ! <du/dx*du/dy>
-    
-      call avg5(stat(1,56),p0,duidxj,alpha,beta,ntot,'ggg') ! <dv/dx*dv/dx>
-      call avg5(stat(1,57),p0,duidxj,alpha,beta,ntot,'hhh') ! <dv/dy*dv/dy>
-      call avg5(stat(1,58),p0,duidxj,alpha,beta,ntot,'iii') ! <dv/dx*dv/dy>
+        call avg5(stat(1,53),p0,duidxj,alpha,beta,ntot,'ddd') ! <du/dx*du/dx>
+        call avg5(stat(1,54),p0,duidxj,alpha,beta,ntot,'eee') ! <du/dy*du/dy>
+        call avg5(stat(1,55),p0,duidxj,alpha,beta,ntot,'fff') ! <du/dx*du/dy>
 
-      call avg5(stat(1,59),p0,duidxj,alpha,beta,ntot,'jjj') ! <du/dx*dv/dx>
-      call avg5(stat(1,60),p0,duidxj,alpha,beta,ntot,'kkk') ! <du/dy*dv/dy>
-      call avg5(stat(1,61),p0,duidxj,alpha,beta,ntot,'lll') ! <du/dx*dv/dy>
-      call avg5(stat(1,62),p0,duidxj,alpha,beta,ntot,'mmm') ! <du/dy*dv/dx>
+        call avg5(stat(1,56),p0,duidxj,alpha,beta,ntot,'ggg') ! <dv/dx*dv/dx>
+        call avg5(stat(1,57),p0,duidxj,alpha,beta,ntot,'hhh') ! <dv/dy*dv/dy>
+        call avg5(stat(1,58),p0,duidxj,alpha,beta,ntot,'iii') ! <dv/dx*dv/dy>
 
-      call avg5(stat(1,63),p0,duidxj,alpha,beta,ntot,'nnn') ! <du/dx>
-      call avg5(stat(1,64),p0,duidxj,alpha,beta,ntot,'ooo') ! <du/dy>
-      call avg5(stat(1,65),p0,duidxj,alpha,beta,ntot,'ppp') ! <du/dz>
+        call avg5(stat(1,59),p0,duidxj,alpha,beta,ntot,'jjj') ! <du/dx*dv/dx>
+        call avg5(stat(1,60),p0,duidxj,alpha,beta,ntot,'kkk') ! <du/dy*dv/dy>
+        call avg5(stat(1,61),p0,duidxj,alpha,beta,ntot,'lll') ! <du/dx*dv/dy>
+        call avg5(stat(1,62),p0,duidxj,alpha,beta,ntot,'mmm') ! <du/dy*dv/dx>
 
-      call avg5(stat(1,66),p0,duidxj,alpha,beta,ntot,'qqq') ! <dv/dx>
-      call avg5(stat(1,67),p0,duidxj,alpha,beta,ntot,'rrr') ! <dv/dy>
-      call avg5(stat(1,68),p0,duidxj,alpha,beta,ntot,'sss') ! <dv/dz>
+        call avg5(stat(1,63),p0,duidxj,alpha,beta,ntot,'nnn') ! <du/dx>
+        call avg5(stat(1,64),p0,duidxj,alpha,beta,ntot,'ooo') ! <du/dy>
+        call avg5(stat(1,65),p0,duidxj,alpha,beta,ntot,'ppp') ! <du/dz>
 
-      call avg5(stat(1,69),p0,duidxj,alpha,beta,ntot,'ttt') ! <dw/dx>
-      call avg5(stat(1,70),p0,duidxj,alpha,beta,ntot,'uuu') ! <dw/dy>
-      call avg5(stat(1,71),p0,duidxj,alpha,beta,ntot,'vvv') ! <dw/dz>
+        call avg5(stat(1,66),p0,duidxj,alpha,beta,ntot,'qqq') ! <dv/dx>
+        call avg5(stat(1,67),p0,duidxj,alpha,beta,ntot,'rrr') ! <dv/dy>
+        call avg5(stat(1,68),p0,duidxj,alpha,beta,ntot,'sss') ! <dv/dz>
 
-      endif
+        call avg5(stat(1,69),p0,duidxj,alpha,beta,ntot,'ttt') ! <dw/dx>
+        call avg5(stat(1,70),p0,duidxj,alpha,beta,ntot,'uuu') ! <dw/dy>
+        call avg5(stat(1,71),p0,duidxj,alpha,beta,ntot,'vvv') ! <dw/dz>
+
       endif
 
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C 
 C ------------------------------------------------------------------------------- C
-C ------- average the statistical quantities in the homogeneous directions ------ C
-C   planar_average_z; average in the homogeneous streamwise (axial) z-direction   C
+C --------- Extract z-slices of the averaged quantities  ------------------------ C
 C ------------------------------------------------------------------------------- C
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C 
 
-
-      if (mod(istep,iastep).eq.0.and.istep.ge.1) then
+      if (mod(nrec,iastep).eq.0.and.istep.ge.1) then
 
         allocate(stat_xy(lx1*lz1*nElperFace, nstat))
-        allocate(w1(ly1*lz1*nElperFace))
+        allocate(w1(ly1*lx1*nElperFace))
         
-        if(nid.eq.0)  indts = indts + 1
+        if(nid.eq.0) indts = indts + 1
 
         do k=1,nslices
 
@@ -330,7 +313,6 @@ C ------------------------------------------------------------------------------
 C ------------ Write statistics to file ----------------------------------------- C
 C ------------------------------------------------------------------------------- C
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C 
-
         write(pippo,'(F4.1, A, i4.4)') zslices(k), '_',  indts
 
         inputname1 = 'statistics/recordings/stat_z_'//
@@ -346,13 +328,11 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         open(unit=33,form='unformatted',file=inputname1)
 
-        my=ny1*nely
-        mz=nz1*nelz
-        m=my*mz
+        m=lx1*ly1*nElperFace
 
         write(val1,'(1p15e17.9)') 1/param(2)                 ! Reynolds number	  
         write(val2,'(1p15e17.9)') domain_x,domain_y,domain_z ! domain size
-        write(val3,'(9i9)') nelx,nely,nelz                   ! number of elements 
+        write(val3,'(9i9)') nElperFace                       ! number of elements 
         write(val4,'(9i9)') nx1-1,ny1-1,nz1-1                ! polynomial order
         write(val5,'(9i9)')       nstat                      ! number of saved statistics 
         write(val6,'(1p15e17.9)') times                      ! start time
@@ -364,7 +344,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         write(33) '(Re ='//trim(val1)
      &   //') (Lx, Ly, Lz ='//trim(val2)
-     &   //') (nelx, nely, nelz ='//trim(val3)
+     &   //') (nel ='//trim(val3)
      &   //') (Polynomial order ='//trim(val4)
      &   //') (Nstat ='//trim(val5)
      &   //') (start time ='//trim(val6)
@@ -376,7 +356,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         write(33) 1/param(2),
      &      domain_x, domain_y, domain_z,
-     &      nelx    , nely    , nelz,
+     &      nElperFace,
      &      nx1-1   , ny1-1   , nz1-1,
      &      nstat,
      &      times,
@@ -430,12 +410,14 @@ c-----------------------------------------------------------------------
       integer ierr
 
 !     namelists
-      namelist /AVG_LIST/ nSlices,nElperFace, zslices
+      namelist /AVG_LIST/ nSlices,nElperFace,delta_time_avg, zslices
 
 !-----------------------------------------------------------------------
 !     default values
-      nSlices = 10
+
+      nSlices = 50 ! adapt this if necessary
       nelperface = 256
+      delta_time_avg = 1e-3
 c     zslices = (/0.,1.,2.,5.,10./)
       allocate(zslices(nSlices))
 !     read the file
@@ -448,6 +430,7 @@ c     zslices = (/0.,1.,2.,5.,10./)
 !     broadcast data
       call bcast(nSlices,ISIZE)
       call bcast(nelperface,ISIZE)
+      call bcast(delta_time_avg,WDSIZE)
       call bcast(zslices, nSlices*WDSIZE)
 
       return
@@ -469,7 +452,7 @@ c     zslices = (/0.,1.,2.,5.,10./)
       integer ierr
 
 !     namelists
-      namelist /AVG_LIST/ nSlices, nElperFace, zslices
+      namelist /AVG_LIST/ nSlices,nElperFace,delta_time_avg, zslices
 !-----------------------------------------------------------------------
       ierr=0
       if (NID.eq.0) then
@@ -811,6 +794,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 c-----------------------------------------------------------------------
 
         ! extract the given x-value (must be mesh aligned)
+        ! and contiguous in element indices
       subroutine extract_z_slice(z_val,stat_xy,nelpFac,stat3d,nstat,w1)
         implicit none
 

@@ -120,7 +120,7 @@ c-----------------------------------------------------------------------
 
       subroutine usrdat
       use SEM, only: xbmin, xbmax, ybmin, ybmax, zbmin, zbmax, Vb,
-     &   bbox_max, sigma_max, sigma_min, z_inlet
+     &   bbox_max, sigma_max, z_inlet
       implicit none
       real, external :: glmin, glmax ! defined in math.f
 
@@ -148,10 +148,10 @@ c     Initialize SEM variables
       ! The bounding "box" (more precisely a cylinder for the pipe)
       ! is just large enough to contain the compact support of all
       ! eddies. 
-      xbmin = xmin - max(bbox_max, sigma_min)
-      xbmax = xmax + max(bbox_max, sigma_min)
-      ybmin = ymin - max(bbox_max, sigma_min)
-      ybmax = ymax + max(bbox_max, sigma_min)
+      xbmin = xmin - bbox_max
+      xbmax = xmax + bbox_max
+      ybmin = ymin - bbox_max
+      ybmax = ymax + bbox_max
       zbmin = z_inlet - .5*sigma_max
       zbmax = z_inlet + .5*sigma_max
       Vb = (zbmax-zbmin)*ybmax**2.*pi

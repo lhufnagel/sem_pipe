@@ -55,7 +55,7 @@ c-----------------------------------------------------------------------
       real mtimes   , mtimee, mDT, matime
       real Ttimes   , Tatime      
 
-      integer mnelx, mnely, mnelz
+      integer mnel
       integer polyx, polyy, polyz
       integer nstat, nrec , Tnrec 
 
@@ -163,7 +163,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
               read(33) mRey,        ! Reynolds number
      &      mdomain_x, mdomain_y, mdomain_z,  ! domain size
-     &      mnelx    , mnely    , mnelz,      ! number of elements 
+     &      mnel,                             ! number of elements 
      &      polyx    , polyy    , polyz,      ! polynomial order
      &      nstat,                ! number of saved statistics 
      &      mtimes,           ! start time 
@@ -186,7 +186,8 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
          call exitt
         endif 
 
-        if (nElperFace.ne.mnely) then
+
+        if (nElperFace.ne.mnel) then
           write(6,*) 
      $  'change nElperFace in pipe.upar to be equal to that of the run'
          call exitt
@@ -241,7 +242,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
       write(val1,'(1p15e17.9)') mRey  	   	        ! Reynolds number	  
       write(val2,'(1p15e17.9)') mdomain_x,mdomain_y,mdomain_z ! domain size
-      write(val3,'(9i9)') mnelx,mnely,mnelz                   ! number of elements 
+      write(val3,'(9i9)') mnel                                ! number of elements 
       write(val4,'(9i9)') polyx,polyy,polyz                   ! polynomial order
       write(val5,'(9i9)')       nstat                         ! number of saved statistics 
       write(val6,'(1p15e17.9)') Ttimes                        ! start time
@@ -256,7 +257,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
       write(37) '(Re ='//trim(val1)
      &   //') (Lx, Ly, Lz ='//trim(val2)
-     &   //') (nelx, nely, nelz ='//trim(val3)
+     &   //') (nel ='//trim(val3)
      &   //') (Polynomial order ='//trim(val4)
      &   //') (Nstat ='//trim(val5)
      &   //') (start time ='//trim(val6)
@@ -271,7 +272,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
       write(37) mRey,
      &      mdomain_x, mdomain_y, mdomain_z,
-     &      mnelx    , mnely    , mnelz,
+     &      mnel,
      &      polyx    , polyy    , polyz,
      &      nstat,
      &      Ttimes,

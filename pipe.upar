@@ -1,8 +1,9 @@
 &USERPAR
  /
 &AVG_LIST
- nSlices=3, ! upper limit of 10
+ nSlices=3, ! upper limit of 50, adapt avg-all.f in case
  nElperFace=128,
+ delta_time_avg=4.0420266e-2, ! create statistical records every (1s)+
  zslices=0.,1.,2.,
  /
 &CHKPOINT
@@ -13,7 +14,7 @@
  neddy=5000,
  nElInlet=128,
  sigma_max=0.27486,
- sigma_min=0.0001,
+ yplus_cutoff=0.472222222, ! (R-10)+ at Re_tau = 180, R=.5
  bbox_max=0.056101,
  u0=1.0,
  /
