@@ -153,9 +153,6 @@ c     Read infile
         eg = lglel(e)
 
         ! Calculate eddy size and intensity at inlet only once
-
-        write(*,*) 'rad ', sqrt(xm1(i,j,1,e)**2 + ym1(i,j,1,e)**2)
-
         if (eg.le.nElInlet) then
 
           do j=1,ly1

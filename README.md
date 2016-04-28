@@ -6,7 +6,7 @@ The SEM is implemented to generate nonuniform, isotropic turbulence, like in cas
 #### Parameters/Limitations
 * An input file `sem_input.txt`is required, that gives the mean-velocity, turbulent kinetic energy and dissipation rate and the wall distance of these scalars. This can be generated with `statistics/matlab_scripts/generate_k_eps.m`
 * The following parameters are taken from `pipe.upar` 
-    * `neddy` the number of eddies. Should *(probably??)* suffice A_inlet/(πσ_min²) 
+    * `neddy` the number of eddies. Should *(probably??)* suffice A_inlet/(πσ_min²). However, it was observed that too many eddies (at too small sigma_min) seem not to contribute to the generated signal properly -> underestimation of turbulent kinetic energy, because of factor sqrt(Vb/neddy) 
     * `nElInlet` the number of elements in the inlet plane
     * `sigma_max` The maximal eddy size, i.e. max(k^1.5/eps). Can be taken from above Matlab script
     * `sigma_min` The minimal eddy size, i.e. cutoff from below to avoid numerical instabilites. Note: is also mesh dependent
@@ -14,7 +14,7 @@ The SEM is implemented to generate nonuniform, isotropic turbulence, like in cas
     * `u0` The bulk mean velocity
     * `Vb`, `z_inlet`, and `ybmax` are be set in `usrdat()`. They are the volume of the convective box/cylinder, the `z` coordinate of the inlet and the _radius_
  
-As of now, the SEM is only implemented to generate a turbulent signal in z-positive direction. It should however be straightforward to change the relevant code.The first elements in the `pipe.rea` should be the face, at which the SEM inflow is placed. This enables us to precompute eddy-size once for the whole simulation (using linear interpolation from `sem_input.txt`) instead of calculate the eddy-size at each time step. An unoptmized version without this limitation shoud be in [commit aaa095](../../commit/aaa095)
+As of now, the SEM is only implemented to generate a turbulent signal in z-positive direction (x-positive was before [commit c820c3](../../commit/c820c3d9f9ae82491efa70bcbb80dae23970e9b5). It should however be straightforward to change the relevant code.The first elements in the `pipe.rea` should be the face, at which the SEM inflow is placed. This enables us to precompute eddy-size once for the whole simulation (using linear interpolation from `sem_input.txt`) instead of calculate the eddy-size at each time step. An unoptmized version without this limitation shoud be in [commit aaa095](../../commit/aaa095)
 
 
 ## Workflow
