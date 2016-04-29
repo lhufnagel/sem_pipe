@@ -15,7 +15,7 @@ k_plot_scaling = 100.0;
 delta_tau = pipe_radius/Re_tau;
 %u_tau = nu/delta_tau;
 
-u_tau = 6.8322301823104711E-02;
+ref_u_tau = 6.8322301823104711E-02;
 
 %reference = importdata('/scratch/hufnagel/MSc/ElKhouryData/180_Re_1.dat'); % El Khoury data
 reference = importdata('../../../ElKhouryData/180_Re_1.dat'); % El Khoury data
@@ -23,10 +23,9 @@ ref_rr_budg = importdata('../../../ElKhouryData/180_RR_Budget.dat'); % El Khoury
 ref_tt_budg = importdata('../../../ElKhouryData/180_TT_Budget.dat'); % El Khoury data
 ref_zz_budg = importdata('../../../ElKhouryData/180_ZZ_Budget.dat'); % El Khoury data
 
-%ref_eps_rr = u_tau^4/nu*ref_rr_budg.data(:,8);
-ref_eps_rr = u_tau^4/nu*ref_rr_budg.data(:,8);
-ref_eps_tt = u_tau^4/nu*ref_tt_budg.data(:,8);
-ref_eps_zz = u_tau^4/nu*ref_zz_budg.data(:,8);
+ref_eps_rr = ref_u_tau^4/nu*ref_rr_budg.data(:,8);
+ref_eps_tt = ref_u_tau^4/nu*ref_tt_budg.data(:,8);
+ref_eps_zz = ref_u_tau^4/nu*ref_zz_budg.data(:,8);
 
 ref_r = reference.data(:,2);
 ref_u = reference.data(:,3);
@@ -34,7 +33,7 @@ ref_ur_rms = reference.data(:,5);
 ref_ut_rms = reference.data(:,6);
 ref_uz_rms = reference.data(:,7);
 ref_uzur = reference.data(:,8);
-ref_k = u_tau^2*.5*(ref_ur_rms.^2+ref_ut_rms.^2+ref_uz_rms.^2);
+ref_k = ref_u_tau^2*.5*(ref_ur_rms.^2+ref_ut_rms.^2+ref_uz_rms.^2);
 
 %Glob files
 file_names = dir('../recordings/polar_z_*');
@@ -70,6 +69,11 @@ figure(8);
 clf;
 figure(9);
 clf;
+figure(10);
+clf;
+utaus = [];
+tauws = [];
+h12s = [];
 
 
 for file = 1:length(file_names)
@@ -78,7 +82,7 @@ for file = 1:length(file_names)
   pipe_stat;
 
   figure(1);
-  u_mean = mean(RR1(3,:,:),3);
+  u_mean = R1(3);
 
   %visc = ref_r;
   %visc = visc(visc < 30);
@@ -107,17 +111,14 @@ for file = 1:length(file_names)
 
   figure(2);
 
-  RR2_mean = mean(RR2,4);
-
   %take the abs() because unfortunately some values are <0
-  ur_rms = sqrt(abs(squeeze(RR2_mean(1,1,:))));
-  ut_rms = sqrt(abs(squeeze(RR2_mean(2,2,:))));
-  uz_rms = sqrt(abs(squeeze(RR2_mean(3,3,:))));
+  ur_rms = sqrt(abs(squeeze(R2(1,1,:))));
+  ut_rms = sqrt(abs(squeeze(R2(2,2,:))));
+  uz_rms = sqrt(abs(squeeze(R2(3,3,:))));
 
-  uz_ur =  squeeze(mean(abs(RR2(1,3,:,:)),4));
+  uz_ur =  abs(squeeze(R2(1,3,:)));
 
   k = .5*(uz_rms.^2+ur_rms.^2+ut_rms.^2);
-
 
   semilogy(z_vals(file) +  k_plot_scaling*k, r10/delta_tau, 'x-');
   hold on; % Have to put hold after first semilog call - matlab bug
@@ -189,9 +190,6 @@ for file = 1:length(file_names)
 
   figure(7);
 
- %Drr   = -2*nu*squeeze(DS_cyl(1,1,:,:));%./normal;
- %Dthth = -2*nu*squeeze(DS_cyl(2,2,:,:));%./normal;
- %Dss   = -2*nu*squeeze(DS_cyl(3,3,:,:));%./normal;
   eps_rr = -mean(Drr,2);
 
   semilogy(z_vals(file) +  k_plot_scaling*eps_rr, r10/delta_tau, 'x-');
@@ -238,6 +236,9 @@ for file = 1:length(file_names)
   err_rel = calcRelErr(interp1(ref_r, -ref_eps_zz, r10/delta_tau), eps_zz);
   text(z_vals(file)+.5*max(ref_uz_rms),4+mod(file,2) , ['||e_{rel}|| = ' num2str(err_rel)],'Color','red','FontSize',12);
 
+  tauws = [tauws tauw_rms];
+  h12s = [h12s H12];
+  utaus = [utaus u_tau];
 end
 
 hold off;
@@ -304,3 +305,16 @@ xlabel(['z in diameters downstream the pipe; Velocity in (m/s) is scaled by *' n
 ylabel('r^+');
 legend('-\epsilon_{zz}', 'El Khoury');
 axis([min(z_vals) 1.25*max(z_vals) .5 2*Re_tau]);
+
+figure(10);
+subplot(3,1,1)
+plot(z_vals,tauws, 'x-');
+legend('\tau_{w,rms}');
+subplot(3,1,2)
+plot(z_vals,h12s, 'x-');
+legend('H_{12}');
+hold on;
+subplot(3,1,3)
+plot(z_vals,utaus, 'x-');
+legend('u_{\tau}');
+xlabel('z in diameters downstream the pipe'); 
