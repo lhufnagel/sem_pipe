@@ -146,7 +146,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
        Tnrec  = 0
        do while (.true.)
 
-         write(pippo,'(F4.1, A, i4.4)') zslices(n), '_',  ssf
+         write(pippo,'(F7.3, A, i4.4)') zslices(n), '_',  ssf
          inputname1 = 'recordings/stat_z_'//adjustl(trim(pippo))
 
 
@@ -236,7 +236,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
-      write(pippo,'(F4.1)') zslices(n)
+      write(pippo,'(F7.3)') zslices(n)
       inputname2 = 'recordings/polar_z_'//adjustl(trim(pippo))
       open(unit=37,form='unformatted',file=inputname2) 
 
