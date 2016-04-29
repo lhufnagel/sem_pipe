@@ -50,7 +50,7 @@ end
 
 % Small function for relative error that avoids div-by-zero
 %calcRelErr = @(ref_x, actual_x) norm((ref_x(ref_x>1e-10) - actual_x(ref_x>1e-10))./ref_x(ref_x>1e-10),1)/length(ref_x(ref_x>1e-10));
-calcRelErr = @(ref_x, actual_x) norm((ref_x(ref_x>1e-10) - actual_x(ref_x>1e-10)))/norm(ref_x(ref_x>1e-10));
+calcRelErr = @(ref_x, actual_x) 0.1;%norm((ref_x(ref_x>1e-10) - actual_x(ref_x>1e-10)))/norm(ref_x(ref_x>1e-10));
 
 figure(1);
 clf;
@@ -78,7 +78,7 @@ for file = 1:length(file_names)
   pipe_stat;
 
   figure(1);
-  u_mean = mean(Q2,2);
+  u_mean = mean(RR1(3,:,:),3);
 
   %visc = ref_r;
   %visc = visc(visc < 30);
@@ -208,7 +208,7 @@ for file = 1:length(file_names)
 
   figure(8);
 
-  eps_tt = -mean(Dthth,2);
+  eps_tt = -mean(Dtt,2);
 
   semilogy(z_vals(file) +  k_plot_scaling*eps_tt, r10/delta_tau, 'x-');
   hold on; % Have to put hold after first semilog call - matlab bug
@@ -224,7 +224,7 @@ for file = 1:length(file_names)
 
   figure(9);
 
-  eps_zz = -mean(Dss,2);
+  eps_zz = -mean(Dzz,2);
 
   semilogy(z_vals(file) +  20*eps_zz, r10/delta_tau, 'x-');
   hold on; % Have to put hold after first semilog call - matlab bug

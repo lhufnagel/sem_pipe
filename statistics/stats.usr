@@ -35,7 +35,7 @@ c-----------------------------------------------------------------------
       include 'PARALLEL'  ! nelgt
 
       integer nf, i, j,n, m, ssf, ifld
-      parameter (nf     = 71) ! Number of saved statistical fields 
+      parameter (nf     = 62) ! Number of saved statistical fields 
       real, parameter :: twoPi = 6.283185307179586476925286766
 
       real, allocatable  :: stat_2D1(:,:)
@@ -240,19 +240,19 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
       inputname2 = 'recordings/polar_z_'//adjustl(trim(pippo))
       open(unit=37,form='unformatted',file=inputname2) 
 
-      write(val1,'(1p15e17.9)') mRey  	   	        ! Reynolds number	  
-      write(val2,'(1p15e17.9)') mdomain_x,mdomain_y,mdomain_z ! domain size
-      write(val3,'(9i9)') mnel                                ! number of elements 
-      write(val4,'(9i9)') polyx,polyy,polyz                   ! polynomial order
-      write(val5,'(9i9)')       nstat                         ! number of saved statistics 
-      write(val6,'(1p15e17.9)') Ttimes                        ! start time
-      write(val7,'(1p15e17.9)') mtimee                        ! end time
-      write(val8,'(1p15e17.9)') Tatime                        ! average time
-      write(val9,'(1p15e17.9)') mDT                           ! time step
-      write(val10,'(9i9)')      Tnrec                         ! number of time records
-      write(val11,'(9i9)')      ng_r                          ! 
-      write(val12,'(9i9)')      ng_theta                      ! 
-      write(val13,'(9i9)')      CR                            ! 
+      write(val1,'(1p,e17.9)') mRey  	   	        ! Reynolds number	  
+      write(val2,'(1p,3e17.9)') mdomain_x,mdomain_y,mdomain_z ! domain size
+      write(val3,'(i9)') mnel                                ! number of elements 
+      write(val4,'(3i9)') polyx,polyy,polyz                   ! polynomial order
+      write(val5,'(i9)')       nstat                         ! number of saved statistics 
+      write(val6,'(1p,e17.9)') Ttimes                        ! start time
+      write(val7,'(1p,e17.9)') mtimee                        ! end time
+      write(val8,'(1p,e17.9)') Tatime                        ! average time
+      write(val9,'(1p,e17.9)') mDT                           ! time step
+      write(val10,'(i9)')      Tnrec                         ! number of time records
+      write(val11,'(i9)')      ng_r                          ! 
+      write(val12,'(i9)')      ng_theta                      ! 
+      write(val13,'(i9)')      CR                            ! 
 
 
       write(37) '(Re ='//trim(val1)
