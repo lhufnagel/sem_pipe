@@ -315,6 +315,6 @@ plot(z_vals,h12s, 'x-');
 legend('H_{12}');
 hold on;
 subplot(3,1,3)
-plot(z_vals,utaus, 'x-');
-legend('u_{\tau}');
+plot(z_vals,utaus/ref_u_tau, 'x-');
+legend('u_{\tau}/u_{\tau,ref}');
 xlabel('z in diameters downstream the pipe'); 
