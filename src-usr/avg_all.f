@@ -34,6 +34,7 @@ C=======================================================================
 
       real, external :: glmin, glmax ! defined in math.f
       real, external :: surf_mean ! defined in subs1.f
+      external :: comp_vort3 ! defined in navier5.f
 
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 C ---------------------------------------------------------------------- C
@@ -45,10 +46,9 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
-      integer nstat, nstat_extra, iastep, i, j, k,m, ierr
+      integer nstat, iastep, i, j, k,m, ierr
       integer ntot
-      parameter (nstat = 71) ! Number of statistical fields to be saved
-      parameter (nstat_extra = 9) !('new 9 terms for curved pipe due to flatness')
+      parameter (nstat = 62) ! Number of statistical fields to be saved
 
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
@@ -62,7 +62,6 @@ C ---------------------------------------------------------------------- C
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
       real stat(lx1*ly1*lz1*lelt, nstat)
-c     real stat_extra(lx1*ly1*lz1*lelt, nstat_extra)
       real stat_rot(lx1*ly1*lz1*lelt, nstat)
 
       real pm1(lx1*ly1*lz1*lelt)
@@ -73,6 +72,9 @@ c     real stat_extra(lx1*ly1*lz1*lelt, nstat_extra)
       real ur(lx1*ly1*lz1), us(lx1*ly1*lz1), ut(lx1*ly1*lz1)
       real vr(lx1*ly1*lz1), vs(lx1*ly1*lz1), vt(lx1*ly1*lz1)
       real wr(lx1*ly1*lz1), ws(lx1*ly1*lz1), wt(lx1*ly1*lz1)
+      real vort(lx1*ly1*lz1*lelv,3),
+     $      w3(lx1*ly1*lz1*lelv),w4(lx1*ly1*lz1*lelv)
+      real omega_r(lx1*ly1*lz1*lelt), omega_t(lx1*ly1*lz1*lelt)
 
       real alpha, beta, dtime
       real xlmin, xlmax, domain_x
@@ -162,6 +164,8 @@ c      call mappr(pm1,pr,wk1,wk2) ! map pressure to mesh 1 (vel. mesh)
       call cadd(p0,pmean,ntot)
 
       call comp_derivat(duidxj,vx,vy,vz,ur,us,ut,vr,vs,vt,wr,ws,wt)
+      call comp_vort3(vort,w3,w4,vx,vy,vz)
+      call convert_vor(omega_r,omega_t,vort(1,1),vort(1,2),ntot)
 
       if (atime.ne.0.) then ! closed in l. 1606
         nrec  = nrec + 1
@@ -182,7 +186,6 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         call avg3(stat(1,9),vx,vy,alpha,beta,ntot,'uvrm',ifverbose)  ! <uv> (u, v: instantaneous)
         call avg3(stat(1,10),vy,vz,alpha,beta,ntot,'vwrm',ifverbose) ! <vw> (v, w: instantaneous)
         call avg3(stat(1,11),vz,vx,alpha,beta,ntot,'wurm',ifverbose) ! <uw> (u, w: instantaneous)
-
 
         call avg4(stat(1,12),vx,p0,alpha,beta,ntot,'pu')   ! <pu> (p, u: instantaneous)
         call avg4(stat(1,13),vy,p0,alpha,beta,ntot,'pv')   ! <pv> (p, v: instantaneous)           
@@ -223,69 +226,34 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         call avg8(stat(1,40),vx,vx,vy,vy,alpha,beta,ntot,'v4')      ! <uuvv> (v: instantaneous)
         call avg8(stat(1,41),vx,vy,vy,vy,alpha,beta,ntot,'w4')      ! <uvvv> (w: instantaneous)	 
 
-c     TODO reactivate
-cC%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C 
-cC%%% Extra 4th order terms due to computing flatness for turbulent curved pipe%%%%C 
-cC%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C 
-c      call avg8(stat_extra(1,1),vx,vx,vx,vz,alpha,beta,ntot,'u4',
-c     $        ifverbose)                                           ! <uuuw> (u: instantaneous)    
-c      call avg8(stat_extra(1,2),vx,vx,vz,vz,alpha,beta,ntot,'v4',
-c     $        ifverbose)                                           ! <uuww> (u: instantaneous)    
-c      call avg8(stat_extra(1,3),vx,vz,vz,vz,alpha,beta,ntot,'w4',
-c     $        ifverbose)                                           ! <uwww> (u: instantaneous) 
-c      call avg8(stat_extra(1,4),vy,vy,vy,vz,alpha,beta,ntot,'u4',
-c     $        ifverbose)                                           ! <vvvw> (u: instantaneous)    
-c      call avg8(stat_extra(1,5),vy,vy,vz,vz,alpha,beta,ntot,'v4',
-c     $        ifverbose)                                           ! <vvww> (u: instantaneous)    
-c      call avg8(stat_extra(1,6),vy,vz,vz,vz,alpha,beta,ntot,'w4',
-c     $        ifverbose)                                           ! <vwww> (u: instantaneous)
-c      call avg8(stat_extra(1,7),vx,vx,vy,vz,alpha,beta,ntot,'u4',
-c     $        ifverbose)                                           ! <uuvw> (u: instantaneous)    
-c      call avg8(stat_extra(1,8),vx,vy,vy,vz,alpha,beta,ntot,'v4',
-c     $        ifverbose)                                           ! <uvvw> (u: instantaneous)    
-c      call avg8(stat_extra(1,9),vx,vy,vz,vz,alpha,beta,ntot,'w4',
-c     $        ifverbose)                                           ! <uvww> (u: instantaneous)
-cC%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C 
+        call avg7(stat(1,42),duidxj,alpha,beta,ntot,'e11',ifverbose)   ! e11: <du/dx.du/dx + du/dy.du/dy + du/dz.du/dz> (u: instantaneous)
+        call avg7(stat(1,43),duidxj,alpha,beta,ntot,'e22',ifverbose)   ! e22: <dv/dx.dv/dx + dv/dy.dv/dy + dv/dz.dv/dz> (v: instantaneous) 
+        call avg7(stat(1,44),duidxj,alpha,beta,ntot,'e33',ifverbose)   ! e33: <dw/dx.dw/dx + dw/dy.dw/dy + dw/dz.dw/dz> (w: instantaneous)
 
-        call avg7(stat(1,42),duidxj,alpha,beta,ntot,'e11')   ! e11: <d2u2/dx2 + d2u2/dy2 + d2u2/dz2> (u: instantaneous)
-        call avg7(stat(1,43),duidxj,alpha,beta,ntot,'e22')   ! e22: <d2v2/dx2 + d2v2/dy2 + d2v2/dz2> (v: instantaneous) 
-        call avg7(stat(1,44),duidxj,alpha,beta,ntot,'e33')   ! e33: <d2w2/dx2 + d2w2/dy2 + d2w2/dz2> (w: instantaneous)
+        call avg7(stat(1,45),duidxj,alpha,beta,ntot,'e12',ifverbose)   ! e12: <du/dx.dv/dx + du/dy.dv/dy + du/dz.dv/dz> (u, v: instantaneous)       
+        call avg7(stat(1,46),duidxj,alpha,beta,ntot,'e13',ifverbose)   ! e13: <du/dx.dw/dx + du/dy.dw/dy + du/dz.dw/dz> (u, w: instantaneous) 
+        call avg7(stat(1,47),duidxj,alpha,beta,ntot,'e23',ifverbose)   ! e23: <dv/dx.dw/dx + dv/dy.dw/dy + dv/dz.dw/dz> (v, w: instantaneous) 
 
-        call avg7(stat(1,45),duidxj,alpha,beta,ntot,'e12')   ! e12: <du/dx.dv/dx + du/dy.dv/dy + du/dz.dv/dz> (u, v: instantaneous)       
-        call avg7(stat(1,46),duidxj,alpha,beta,ntot,'e13')   ! e13: <du/dx.dw/dx + du/dy.dw/dy + du/dz.dw/dz> (u, w: instantaneous) 
-        call avg7(stat(1,47),duidxj,alpha,beta,ntot,'e23')   ! e23: <dv/dx.dw/dx + dv/dy.dw/dy + dv/dz.dw/dz> (v, w: instantaneous) 
+        call avg5(stat(1,48),p0,duidxj,alpha,beta,ntot,'nnn',ifverbose) ! <du/dx>
+        call avg5(stat(1,49),p0,duidxj,alpha,beta,ntot,'ooo',ifverbose) ! <du/dy>
+        call avg5(stat(1,50),p0,duidxj,alpha,beta,ntot,'ppp',ifverbose) ! <du/dz>
 
-        call avg5(stat(1,48),p0,duidxj,alpha,beta,ntot,'omz') ! <omz>
-        call avg5(stat(1,49),p0,duidxj,alpha,beta,ntot,'ozz') ! <omz*omz>
+        call avg5(stat(1,51),p0,duidxj,alpha,beta,ntot,'qqq',ifverbose) ! <dv/dx>
+        call avg5(stat(1,52),p0,duidxj,alpha,beta,ntot,'rrr',ifverbose) ! <dv/dy>
+        call avg5(stat(1,53),p0,duidxj,alpha,beta,ntot,'sss',ifverbose) ! <dv/dz>
 
-        call avg5(stat(1,50),p0,duidxj,alpha,beta,ntot,'aaa') ! <dw/dx*dw/dx>
-        call avg5(stat(1,51),p0,duidxj,alpha,beta,ntot,'bbb') ! <dw/dy*dw/dy>
-        call avg5(stat(1,52),p0,duidxj,alpha,beta,ntot,'ccc') ! <dw/dx*dw/dy>
+        call avg5(stat(1,54),p0,duidxj,alpha,beta,ntot,'ttt',ifverbose) ! <dw/dx>
+        call avg5(stat(1,55),p0,duidxj,alpha,beta,ntot,'uuu',ifverbose) ! <dw/dy>
+        call avg5(stat(1,56),p0,duidxj,alpha,beta,ntot,'vvv',ifverbose) ! <dw/dz>
 
-        call avg5(stat(1,53),p0,duidxj,alpha,beta,ntot,'ddd') ! <du/dx*du/dx>
-        call avg5(stat(1,54),p0,duidxj,alpha,beta,ntot,'eee') ! <du/dy*du/dy>
-        call avg5(stat(1,55),p0,duidxj,alpha,beta,ntot,'fff') ! <du/dx*du/dy>
+        call avg1(stat(1,57),omega_r,alpha,beta,ntot,'velx',ifverbose)  ! <omr>
+        call avg1(stat(1,58),omega_t,alpha,beta,ntot,'vely',ifverbose)  ! <omt>
+        call avg1(stat(1,59),vort(1,3),alpha,beta,ntot,'velz',ifverbose)! <omz>
 
-        call avg5(stat(1,56),p0,duidxj,alpha,beta,ntot,'ggg') ! <dv/dx*dv/dx>
-        call avg5(stat(1,57),p0,duidxj,alpha,beta,ntot,'hhh') ! <dv/dy*dv/dy>
-        call avg5(stat(1,58),p0,duidxj,alpha,beta,ntot,'iii') ! <dv/dx*dv/dy>
+        call avg2(stat(1,60),omega_r,alpha,beta,ntot,'urms',ifverbose)  ! <omr*omr> 
+        call avg2(stat(1,61),omega_t,alpha,beta,ntot,'vrms',ifverbose)  ! <omt*omt> 
+        call avg2(stat(1,62),vort(1,3),alpha,beta,ntot,'wrms',ifverbose)!<omz*omz> 
 
-        call avg5(stat(1,59),p0,duidxj,alpha,beta,ntot,'jjj') ! <du/dx*dv/dx>
-        call avg5(stat(1,60),p0,duidxj,alpha,beta,ntot,'kkk') ! <du/dy*dv/dy>
-        call avg5(stat(1,61),p0,duidxj,alpha,beta,ntot,'lll') ! <du/dx*dv/dy>
-        call avg5(stat(1,62),p0,duidxj,alpha,beta,ntot,'mmm') ! <du/dy*dv/dx>
-
-        call avg5(stat(1,63),p0,duidxj,alpha,beta,ntot,'nnn') ! <du/dx>
-        call avg5(stat(1,64),p0,duidxj,alpha,beta,ntot,'ooo') ! <du/dy>
-        call avg5(stat(1,65),p0,duidxj,alpha,beta,ntot,'ppp') ! <du/dz>
-
-        call avg5(stat(1,66),p0,duidxj,alpha,beta,ntot,'qqq') ! <dv/dx>
-        call avg5(stat(1,67),p0,duidxj,alpha,beta,ntot,'rrr') ! <dv/dy>
-        call avg5(stat(1,68),p0,duidxj,alpha,beta,ntot,'sss') ! <dv/dz>
-
-        call avg5(stat(1,69),p0,duidxj,alpha,beta,ntot,'ttt') ! <dw/dx>
-        call avg5(stat(1,70),p0,duidxj,alpha,beta,ntot,'uuu') ! <dw/dy>
-        call avg5(stat(1,71),p0,duidxj,alpha,beta,ntot,'vvv') ! <dw/dz>
 
       endif
 
@@ -330,16 +298,16 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         m=lx1*ly1*nElperFace
 
-        write(val1,'(1p15e17.9)') 1/param(2)                 ! Reynolds number	  
-        write(val2,'(1p15e17.9)') domain_x,domain_y,domain_z ! domain size
-        write(val3,'(9i9)') nElperFace                       ! number of elements 
-        write(val4,'(9i9)') nx1-1,ny1-1,nz1-1                ! polynomial order
-        write(val5,'(9i9)')       nstat                      ! number of saved statistics 
-        write(val6,'(1p15e17.9)') times                      ! start time
-        write(val7,'(1p15e17.9)') time                       ! end time
-        write(val8,'(1p15e17.9)') atime                     ! average time
-        write(val9,'(1p15e17.9)') DT                         ! time step
-        write(val10,'(9i9)')      nrec                       ! number of time records
+        write(val1,'(1p,e17.9)') 1./param(2)                 ! Reynolds number	  
+        write(val2,'(1p,3e17.9)') domain_x,domain_y,domain_z ! domain size
+        write(val3,'(i9)') nElperFace                       ! number of elements 
+        write(val4,'(3i9)') nx1-1,ny1-1,nz1-1                ! polynomial order
+        write(val5,'(i9)')       nstat                      ! number of saved statistics 
+        write(val6,'(1p,e17.9)') times                      ! start time
+        write(val7,'(1p,e17.9)') time                       ! end time
+        write(val8,'(1p,e17.9)') atime                     ! average time
+        write(val9,'(1p,e17.9)') DT                         ! time step
+        write(val10,'(i9)')      nrec                       ! number of time records
 
 
         write(33) '(Re ='//trim(val1)
@@ -787,6 +755,38 @@ c
       enddo
       return
       end subroutine comp_derivat
+
+
+      ! Convert vorticity into cylindrical coordinate
+      ! adapted from convert_vel I could only find in Azads scratch..
+
+      subroutine convert_vor(or,ot,oxi,oyi,n)
+        implicit none
+
+      include 'SIZE_DEF'
+      include 'SIZE'
+      include 'GEOM_DEF' ! xm1
+      include 'GEOM'
+
+      real, intent(out) :: or(n),ot(n)
+      real, intent(in) :: oxi(n),oyi(n)
+      integer, intent(in) :: n
+      integer i
+      real  x, y, c, s, prmtrc_t! , prmtrc_r
+
+      do i=1,n  
+         x=xm1(i,1,1,1)
+         y=ym1(i,1,1,1)
+         prmtrc_t=atan2(y,x)
+         c = cos(prmtrc_t)
+         s = sin(prmtrc_t) 
+!        prmtrc_r=sqrt(x*x+y*y)   ! TODO check if neccessary
+         or(i) =  c*oxi(i) + s*oyi(i) 
+         ot(i) = -s*oxi(i) + c*oyi(i) 
+      enddo 
+      return
+      end subroutine convert_vor
+      
 C-----------------------------------------------------------------------
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C      
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C      
