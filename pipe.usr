@@ -69,13 +69,19 @@ c-----------------------------------------------------------------------
       ! Restart, NOT TESTED
       ! call checkpoint
 
+c     CALL OPDIV (BDIVV,VX,VY,VZ)
+c     CALL COL2 (BDIVV,BM2INV,NX2*NY2*NZ2*NELV)
+c     call mappr(divv,bdivv,work1,work2)
+c     call outpost2(vx,vy,vz,pr,bdivv,ldimt,'div')
+
+
       end
 
 c-----------------------------------------------------------------------
 
       subroutine userbc (ix,iy,iz,iside,ieg)
 c     NOTE ::: This subroutine MAY NOT be called by every process
-        use SEM, only: u_sem, v_sem, w_sem
+        use SEM, only: u_sem, v_sem, w_sem, bulk_vel_diff
 
       implicit none
 
@@ -94,9 +100,9 @@ c     NOTE ::: This subroutine MAY NOT be called by every process
 c     SEM inflow
 
       iel=gllel(ieg)
-      ux=u_sem(ix,iy,iz,iel)
-      uy=v_sem(ix,iy,iz,iel)
-      uz=w_sem(ix,iy,iz,iel)
+      ux=u_sem(ix,iy,iz,iel) 
+      uy=v_sem(ix,iy,iz,iel) 
+      uz=w_sem(ix,iy,iz,iel) + bulk_vel_diff
          
       temp = 0.0d0
 

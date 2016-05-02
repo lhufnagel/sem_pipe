@@ -4,18 +4,13 @@ addpath([pwd '/unsorted'])
 % :-X hardcoded definitions..
 Re_tau = 180;
 %Re_tau = 1.8105409983122749E+02; % George's Reference data at this Re_tau
-pipe_radius = 0.5;
+ref_u_tau = 6.8322301823104711E-02;
 nu = 1/5300;
 
 u_plot_scaling = 0.08;
 rms_plot_scaling = 2;
 k_plot_scaling = 100.0;
 
-%yplus/y =Re_tau/pipe_radius
-delta_tau = pipe_radius/Re_tau;
-%u_tau = nu/delta_tau;
-
-ref_u_tau = 6.8322301823104711E-02;
 
 %reference = importdata('/scratch/hufnagel/MSc/ElKhouryData/180_Re_1.dat'); % El Khoury data
 reference = importdata('../../../ElKhouryData/180_Re_1.dat'); % El Khoury data
@@ -45,11 +40,9 @@ for i =1:length(file_names)
   z_vals(i)=str2num(file_names(i).name(9:end));
 end
 
-%my rotation_tens = @(theta) [1, 0 0;0 cos(theta) sin(theta);0,-sin(theta), cos(theta)];
-
 % Small function for relative error that avoids div-by-zero
 %calcRelErr = @(ref_x, actual_x) norm((ref_x(ref_x>1e-10) - actual_x(ref_x>1e-10))./ref_x(ref_x>1e-10),1)/length(ref_x(ref_x>1e-10));
-calcRelErr = @(ref_x, actual_x) 0.1;%norm((ref_x(ref_x>1e-10) - actual_x(ref_x>1e-10)))/norm(ref_x(ref_x>1e-10));
+calcRelErr = @(ref_x, actual_x) norm(ref_x - actual_x)/norm(ref_x);
 
 figure(1);
 clf;
@@ -82,14 +75,14 @@ for file = 1:length(file_names)
   pipe_stat;
 
   figure(1);
-  u_mean = R1(3);
+  u_mean = R1(:,3);
 
   %visc = ref_r;
   %visc = visc(visc < 30);
   %loglaw = ref_r;
   %loglaw = loglaw(loglaw > 5);
 
-  semilogy(z_vals(file) + u_plot_scaling*u_mean/u_tau, r10/delta_tau, 'x-');
+  semilogy(z_vals(file) + u_plot_scaling*u_mean/u_tau, r10/lstar, 'x-');
   hold on; % Have to put hold after first semilog call - matlab bug
 
   % Plot El-Khoury reference
@@ -103,9 +96,9 @@ for file = 1:length(file_names)
 
   % labels
   text(z_vals(file)+.1,1.5, ['x = ' num2str(z_vals(file))]);
-  line([z_vals(file) z_vals(file)],[.1 max(r10/delta_tau)]);
+  line([z_vals(file) z_vals(file)],[.1 max(r10/lstar)]);
 
-  err_rel = calcRelErr(interp1(ref_r, ref_u, r10/delta_tau), u_mean/u_tau);
+  err_rel = calcRelErr(interp1(ref_r, ref_u, r10/lstar,'pchip'), u_mean/u_tau);
   text(z_vals(file)+.5*max(u_mean),max(ref_r)*.01+mod(file,2) , ['||e_{rel}|| = ' num2str(err_rel)],'Color','red','FontSize',12);
 
 
@@ -120,120 +113,120 @@ for file = 1:length(file_names)
 
   k = .5*(uz_rms.^2+ur_rms.^2+ut_rms.^2);
 
-  semilogy(z_vals(file) +  k_plot_scaling*k, r10/delta_tau, 'x-');
+  semilogy(z_vals(file) +  k_plot_scaling*k, r10/lstar, 'x-');
   hold on; % Have to put hold after first semilog call - matlab bug
 
   % Plot El-Khoury reference
   semilogy(z_vals(file) + k_plot_scaling*ref_k, ref_r, 'k--');
   % labels
   text(z_vals(file)+.1,1.5, ['x = ' num2str(z_vals(file))]);
-  line([z_vals(file) z_vals(file)],[.1 max(r10/delta_tau)]);
-  err_rel = calcRelErr(interp1(ref_r, ref_k, r10/delta_tau), k);
+  line([z_vals(file) z_vals(file)],[.1 max(r10/lstar)]);
+  err_rel = calcRelErr(interp1(ref_r, ref_k, r10/lstar,'pchip'), k);
   text(z_vals(file)+.5*max(ref_k),4+mod(file,2) , ['||e_{rel}|| = ' num2str(err_rel)],'Color','red','FontSize',12);
 
   figure(3);
 
-  semilogy(z_vals(file) +  uz_rms/u_tau, r10/delta_tau, 'x-');
+  semilogy(z_vals(file) +  uz_rms/u_tau, r10/lstar, 'x-');
   hold on; % Have to put hold after first semilog call - matlab bug
 
   % Plot El-Khoury reference
   semilogy(z_vals(file) + ref_uz_rms, ref_r, 'k--');
   % labels
   text(z_vals(file)+.1,1.5, ['x = ' num2str(z_vals(file))]);
-  line([z_vals(file) z_vals(file)],[.1 max(r10/delta_tau)]);
+  line([z_vals(file) z_vals(file)],[.1 max(r10/lstar)]);
 
-  err_rel = calcRelErr(interp1(ref_r, ref_uz_rms, r10/delta_tau), uz_rms/u_tau);
+  err_rel = calcRelErr(interp1(ref_r, ref_uz_rms, r10/lstar,'pchip'), uz_rms/u_tau);
   text(z_vals(file)+.5*max(ref_uz_rms),4+mod(file,2) , ['||e_{rel}|| = ' num2str(err_rel)],'Color','red','FontSize',12);
 
   figure(4);
 
-  semilogy(z_vals(file) +  uz_ur/u_tau^2, r10/delta_tau, 'x-');
+  semilogy(z_vals(file) +  uz_ur/u_tau^2, r10/lstar, 'x-');
   hold on; % Have to put hold after first semilog call - matlab bug
 
   % Plot El-Khoury reference
   semilogy(z_vals(file) + ref_uzur, ref_r, 'k--');
   % labels
   text(z_vals(file)+.1,1.5, ['x = ' num2str(z_vals(file))]);
-  line([z_vals(file) z_vals(file)],[.1 max(r10/delta_tau)]);
+  line([z_vals(file) z_vals(file)],[.1 max(r10/lstar)]);
 
-  err_rel = calcRelErr(interp1(ref_r, ref_uzur, r10/delta_tau), uz_ur/u_tau^2);
+  err_rel = calcRelErr(interp1(ref_r, ref_uzur, r10/lstar,'pchip'), uz_ur/u_tau^2);
   text(z_vals(file)+.5*max(ref_uzur),4+mod(file,2) , ['||e_{rel}|| = ' num2str(err_rel)],'Color','red','FontSize',12);
 
 
   figure(5);
 
-  semilogy(z_vals(file) +  rms_plot_scaling*ut_rms/u_tau, r10/delta_tau, 'x-');
+  semilogy(z_vals(file) +  rms_plot_scaling*ut_rms/u_tau, r10/lstar, 'x-');
   hold on; % Have to put hold after first semilog call - matlab bug
 
   % Plot El-Khoury reference
   semilogy(z_vals(file) + rms_plot_scaling*ref_ut_rms, ref_r, 'k--');
   % labels
   text(z_vals(file)+.1,1.5, ['x = ' num2str(z_vals(file))]);
-  line([z_vals(file) z_vals(file)],[.1 max(r10/delta_tau)]);
+  line([z_vals(file) z_vals(file)],[.1 max(r10/lstar)]);
 
-  err_rel = calcRelErr(interp1(ref_r, ref_ut_rms, r10/delta_tau), ut_rms/u_tau);
+  err_rel = calcRelErr(interp1(ref_r, ref_ut_rms, r10/lstar,'pchip'), ut_rms/u_tau);
   text(z_vals(file)+.5*max(ref_ut_rms),4+mod(file,2) , ['||e_{rel}|| = ' num2str(err_rel)],'Color','red','FontSize',12);
 
   figure(6);
 
-  semilogy(z_vals(file) +  rms_plot_scaling*ur_rms/u_tau, r10/delta_tau, 'x-');
+  semilogy(z_vals(file) +  rms_plot_scaling*ur_rms/u_tau, r10/lstar, 'x-');
   hold on; % Have to put hold after first semilog call - matlab bug
 
   % Plot El-Khoury reference
   semilogy(z_vals(file) + rms_plot_scaling*ref_ur_rms, ref_r, 'k--');
   % labels
   text(z_vals(file)+.1,1.5, ['x = ' num2str(z_vals(file))]);
-  line([z_vals(file) z_vals(file)],[.1 max(r10/delta_tau)]);
+  line([z_vals(file) z_vals(file)],[.1 max(r10/lstar)]);
 
-  err_rel = calcRelErr(interp1(ref_r, ref_ur_rms, r10/delta_tau), ur_rms/u_tau);
+  err_rel = calcRelErr(interp1(ref_r, ref_ur_rms, r10/lstar,'pchip'), ur_rms/u_tau);
   text(z_vals(file)+.5*max(ref_ur_rms),4+mod(file,2) , ['||e_{rel}|| = ' num2str(err_rel)],'Color','red','FontSize',12);
 
   figure(7);
 
   eps_rr = -mean(Drr,2);
 
-  semilogy(z_vals(file) +  k_plot_scaling*eps_rr, r10/delta_tau, 'x-');
+  semilogy(z_vals(file) +  k_plot_scaling*eps_rr, r10/lstar, 'x-');
   hold on; % Have to put hold after first semilog call - matlab bug
 
   % Plot El-Khoury reference
   semilogy(z_vals(file) - k_plot_scaling*ref_eps_rr, ref_r, 'k--');
   % labels
   text(z_vals(file)+.1,1.5, ['x = ' num2str(z_vals(file))]);
-  line([z_vals(file) z_vals(file)],[.1 max(r10/delta_tau)]);
+  line([z_vals(file) z_vals(file)],[.1 max(r10/lstar)]);
 
-  err_rel = calcRelErr(interp1(ref_r, -ref_eps_rr, r10/delta_tau), eps_rr);
+  err_rel = calcRelErr(interp1(ref_r, -ref_eps_rr, r10/lstar,'pchip'), eps_rr);
   text(z_vals(file)+.5*max(ref_uz_rms),4+mod(file,2) , ['||e_{rel}|| = ' num2str(err_rel)],'Color','red','FontSize',12);
 
   figure(8);
 
   eps_tt = -mean(Dtt,2);
 
-  semilogy(z_vals(file) +  k_plot_scaling*eps_tt, r10/delta_tau, 'x-');
+  semilogy(z_vals(file) +  k_plot_scaling*eps_tt, r10/lstar, 'x-');
   hold on; % Have to put hold after first semilog call - matlab bug
 
   % Plot El-Khoury reference
   semilogy(z_vals(file) - k_plot_scaling*ref_eps_tt, ref_r, 'k--');
   % labels
   text(z_vals(file)+.1,1.5, ['x = ' num2str(z_vals(file))]);
-  line([z_vals(file) z_vals(file)],[.1 max(r10/delta_tau)]);
+  line([z_vals(file) z_vals(file)],[.1 max(r10/lstar)]);
 
-  err_rel = calcRelErr(interp1(ref_r, -ref_eps_tt, r10/delta_tau), eps_tt);
+  err_rel = calcRelErr(interp1(ref_r, -ref_eps_tt, r10/lstar,'pchip'), eps_tt);
   text(z_vals(file)+.5*max(ref_uz_rms),4+mod(file,2) , ['||e_{rel}|| = ' num2str(err_rel)],'Color','red','FontSize',12);
 
   figure(9);
 
   eps_zz = -mean(Dzz,2);
 
-  semilogy(z_vals(file) +  20*eps_zz, r10/delta_tau, 'x-');
+  semilogy(z_vals(file) +  20*eps_zz, r10/lstar, 'x-');
   hold on; % Have to put hold after first semilog call - matlab bug
 
   % Plot El-Khoury reference
   semilogy(z_vals(file) - 20*ref_eps_zz, ref_r, 'k--');
   % labels
   text(z_vals(file)+.1,1.5, ['x = ' num2str(z_vals(file))]);
-  line([z_vals(file) z_vals(file)],[.1 max(r10/delta_tau)]);
+  line([z_vals(file) z_vals(file)],[.1 max(r10/lstar)]);
 
-  err_rel = calcRelErr(interp1(ref_r, -ref_eps_zz, r10/delta_tau), eps_zz);
+  err_rel = calcRelErr(interp1(ref_r, -ref_eps_zz, r10/lstar,'pchip'), eps_zz);
   text(z_vals(file)+.5*max(ref_uz_rms),4+mod(file,2) , ['||e_{rel}|| = ' num2str(err_rel)],'Color','red','FontSize',12);
 
   tauws = [tauws tauw_rms];
@@ -309,12 +302,15 @@ axis([min(z_vals) 1.25*max(z_vals) .5 2*Re_tau]);
 figure(10);
 subplot(3,1,1)
 plot(z_vals,tauws, 'x-');
+grid on;
 legend('\tau_{w,rms}');
 subplot(3,1,2)
 plot(z_vals,h12s, 'x-');
+grid on;
 legend('H_{12}');
 hold on;
 subplot(3,1,3)
 plot(z_vals,utaus/ref_u_tau, 'x-');
+grid on;
 legend('u_{\tau}/u_{\tau,ref}');
 xlabel('z in diameters downstream the pipe'); 

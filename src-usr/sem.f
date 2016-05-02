@@ -40,6 +40,10 @@ C
          ! maximum extent of eddies (radial direction here)
          real                :: u0 ! bulk velocity
 
+
+         ! Deviation of bulk velocity of generated signal
+         real                :: bulk_vel_diff ! bulk velocity
+         real                :: inlet_area 
          
          character*80 infile
          parameter (infile='sem_input.txt')
@@ -85,6 +89,7 @@ c-----------------------------------------------------------------------
       include 'PARALLEL'
 
       real vel_interp, tke_interp, dissip_interp, sigmal, radius
+      real work
       integer fid, nlines
       integer e, i, j, eg
 
@@ -145,6 +150,8 @@ c     Read infile
       allocate(intensity_inlet(ly1,lz1,nElInlet))
       allocate(umean_inlet(ly1,lz1,nElInlet))
 
+      inlet_area = 0
+
       do e=1,nelv
         eg = lglel(e)
 
@@ -174,10 +181,16 @@ c     Read infile
             intensity_inlet(i,j,eg) = sqrt(2./3.*tke_interp)
           endif
 
+!-----Pick face 5 to evaluate surface Jacobian
+          inlet_area = inlet_area + area(i,j,5,e)
+
           enddo
           enddo
+
         endif
       enddo
+
+      call gop(inlet_area,work,'+  ',1)
 
       end subroutine SEMinit
 
@@ -279,6 +292,7 @@ C=======================================================================
       integer neddy_ll
       save    neddy_ll
 
+      real  work
       real wk_e(neddy*3)
       integer clock, e,eg, 
      &      i,j,i_l,ne,nv,iseed
@@ -320,6 +334,7 @@ c ---- compute velocity contribution of eddies ------
       call rzero(u_sem,nv)
       call rzero(v_sem,nv)
       call rzero(w_sem,nv)
+      bulk_vel_diff = 0
 
       sqrtVn = sqrt(Vb/real(neddy))
 
@@ -360,10 +375,17 @@ c         if (abs(zm1(1,1,1,e)-z_inlet).lt.1e-13) then
      $                      intensity_inlet(i,j,eg)*eps(3,ne)*ff
             endif
            enddo         
+
+
+           bulk_vel_diff = bulk_vel_diff + area(i,j,5,e)*w_sem(i,j,1,e)
+
         enddo
         enddo
       endif 
       enddo
+
+
+      call gop(bulk_vel_diff,work,'+  ',1)
 
       return
       end subroutine synthetic_eddies
