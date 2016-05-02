@@ -175,11 +175,7 @@ c     Read infile
 
           sigma_inlet(i,j,eg)     = sigmal
           umean_inlet(i,j,eg)     = vel_interp
-          if (radius > yplus_cutoff) then
-            intensity_inlet(i,j,eg) = 0.0d0
-          else
-            intensity_inlet(i,j,eg) = sqrt(2./3.*tke_interp)
-          endif
+          intensity_inlet(i,j,eg) = sqrt(2./3.*tke_interp)
 
 !-----Pick face 5 to evaluate surface Jacobian
           inlet_area = inlet_area + area(i,j,5,e)
@@ -425,7 +421,7 @@ c     pt    - local pointer
 c-----------------------------------------------------------------------
 c     Generate eddy location randomly in bounding box
       subroutine gen_eddy(ex,ey,ez,eps,n)
-      use SEM, only: zbmin, zbmax, ybmax 
+      use SEM, only: zbmin, zbmax, yplus_cutoff
       implicit none
 
       real, parameter :: twoPi = 6.283185307179586476925286766
@@ -444,8 +440,7 @@ c     Generate eddy location randomly in bounding box
 
 c     Generate uniformly distributed random locations 
 c     in polar coordinates (!)
-c     ybmax contains actual radius for origin-centered pipe
-      rho = ybmax*sqrt(rnd_loc(0.0,1.0))  
+      rho = yplus_cutoff*sqrt(rnd_loc(0.0,1.0))  
       theta = rnd_loc(0.,twoPI) 
 
       ex(i_l) = rho * cos(theta)

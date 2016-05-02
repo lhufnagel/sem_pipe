@@ -36,9 +36,12 @@ z_vals = zeros(size(file_names));
 if (length(z_vals) == 0)
     error('no files found')
 end
+
 for i =1:length(file_names)
   z_vals(i)=str2num(file_names(i).name(9:end));
 end
+[z_vals, ind] = sort(z_vals);
+file_names = file_names(ind);
 
 % Small function for relative error that avoids div-by-zero
 %calcRelErr = @(ref_x, actual_x) norm((ref_x(ref_x>1e-10) - actual_x(ref_x>1e-10))./ref_x(ref_x>1e-10),1)/length(ref_x(ref_x>1e-10));
