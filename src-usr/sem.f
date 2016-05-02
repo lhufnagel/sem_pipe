@@ -382,6 +382,7 @@ c         if (abs(zm1(1,1,1,e)-z_inlet).lt.1e-13) then
 
 
       call gop(bulk_vel_diff,work,'+  ',1)
+      bulk_vel_diff =  u0 - bulk_vel_diff/inlet_area
 
       return
       end subroutine synthetic_eddies

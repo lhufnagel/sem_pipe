@@ -68,13 +68,6 @@ c-----------------------------------------------------------------------
 
       ! Restart, NOT TESTED
       ! call checkpoint
-
-c     CALL OPDIV (BDIVV,VX,VY,VZ)
-c     CALL COL2 (BDIVV,BM2INV,NX2*NY2*NZ2*NELV)
-c     call mappr(divv,bdivv,work1,work2)
-c     call outpost2(vx,vy,vz,pr,bdivv,ldimt,'div')
-
-
       end
 
 c-----------------------------------------------------------------------

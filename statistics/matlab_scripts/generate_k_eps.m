@@ -48,7 +48,7 @@ sigma=ref_k.^(3./2.)./ref_eps;
 [sigma_max,maxi] = max(sigma);
 sigma_max
 
-[max_y,r_pos]=max(r+.5*sigma);
+[max_y,r_pos]=max(r(ref_r > 10)+.5*sigma(ref_r > 10));
 bbox_max = max_y-radius
 if (ref_r(r_pos) < 10)
     warning(['There will be no eddies in SEM below y+ < 10, but the bounding-box' ...
