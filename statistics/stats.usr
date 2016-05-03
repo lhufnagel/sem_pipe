@@ -1,6 +1,6 @@
 c-----------------------------------------------------------------------
 c     Turbulent pipe flow 
-c     Along (positive) x-direction
+c     Along (positive) z-direction
 c     
 c     Map the generated statistics from cartesian to polar mesh
 c
@@ -153,7 +153,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
          inquire(file=inputname1,exist=file_exists); 
          if (.NOT.file_exists) then
            if (ssf.eq.1) write(*,*) 
-     $ '!!! WARNING: failed to find input slice for x=', zslices(n)
+     $ '!!! WARNING: failed to find input slice for z=', zslices(n)
            goto 2908
          endif
 

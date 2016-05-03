@@ -793,7 +793,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C 
 c-----------------------------------------------------------------------
 
-        ! extract the given x-value (must be mesh aligned)
+        ! extract the given z-value (must be mesh aligned)
         ! and contiguous in element indices
       subroutine extract_z_slice(z_val,stat_xy,nelpFac,stat3d,nstat,w1)
         implicit none
