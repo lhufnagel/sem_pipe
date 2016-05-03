@@ -95,7 +95,7 @@ format long
 %%%%%%%%%%%%%%%%%%%%% Read the interpolated field %%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if ~exist('fname')
-  fname = '../recordings/polar_z_0.0';
+  fname = '../recordings/polar_z_0.000';
 end
 [fid,message] = fopen(fname,'r','ieee-le');
 hdr           = fread(fid,1,'int32')      ;
