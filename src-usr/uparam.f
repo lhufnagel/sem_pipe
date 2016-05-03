@@ -126,10 +126,12 @@
       integer ierr
 
 !     namelists; cannot be empty
-      namelist /USERPAR/ UPRM_PRB
+      namelist /USERPAR/ bent_phi,bent_radius,z_offset
 !-----------------------------------------------------------------------
 !     default values
-      UPRM_PRB = 10
+      bent_phi = 3.1415/2
+      bent_radius = 3.1415/4
+      z_offset = 0
 !     read the file
       ierr=0
       if (NID.eq.0) then
@@ -144,7 +146,9 @@
       call err_chk(ierr,'Error reading USERPAR parameters.$')
 
 !     broadcast data
-      call bcast(UPRM_PRB,ISIZE)
+      call bcast(bent_phi,WDSIZE)
+      call bcast(bent_radius,WDSIZE)
+      call bcast(z_offset,WDSIZE)
 
       return
       end
@@ -164,7 +168,7 @@
       integer ierr
 
 !     namelists; cannot be empty
-      namelist /USERPAR/ UPRM_PRB
+      namelist /USERPAR/ bent_phi,bent_radius,z_offset
 !-----------------------------------------------------------------------
       ierr=0
       if (NID.eq.0) then

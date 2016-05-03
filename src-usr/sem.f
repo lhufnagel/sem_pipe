@@ -97,7 +97,7 @@ c-----------------------------------------------------------------------
 
       if (nElInlet.ne.nElperFace) then
         if (nid.eq.0) write(*,*) 
-     $'ABORT For pipe flow, you probably want nElperFace==nElinlnet'
+     $'ABORT For pipe flow, you probably want nElperFace==nElinlet'
         call exitti
       endif
 
@@ -146,48 +146,45 @@ c     Read infile
       allocate(eps(3,neddy))
       allocate(eddy_pt(neddy))
 
-      allocate(sigma_inlet(ly1,lz1,nElInlet))
-      allocate(intensity_inlet(ly1,lz1,nElInlet))
-      allocate(umean_inlet(ly1,lz1,nElInlet))
+      allocate(sigma_inlet(lx1,ly1,nElInlet))
+      allocate(intensity_inlet(lx1,ly1,nElInlet))
+      allocate(umean_inlet(lx1,ly1,nElInlet))
 
       inlet_area = 0
 
       do e=1,nelv
         eg = lglel(e)
-
+        eg = mod(eg-1,nElInlet)+1 
         ! Calculate eddy size and intensity at inlet only once
-        if (eg.le.nElInlet) then
 
-          do j=1,ly1
-          do i=1,lx1
-          
-          radius = sqrt(xm1(i,j,1,e)**2 + ym1(i,j,1,e)**2)
+        do j=1,ly1
+        do i=1,lx1
 
-          call SEMinputData(radius,vel_interp,tke_interp,dissip_interp)
+        radius = sqrt(xm1(i,j,1,e)**2 + ym1(i,j,1,e)**2)
 
-          sigmal = (tke_interp**1.5)/dissip_interp
-          sigmal = max(.5*sigmal, 1e-8)  ! avoid numerical instability
+        call SEMinputData(radius,vel_interp,tke_interp,dissip_interp)
 
-          ! Optional: Limit eddy size far away from wall. 
-          ! Suggested in Jarrins PhD, but not implemented in Code Saturne
-          ! kappa is .41, 0.5 is pipe radius, therefore .41*.5
-          ! sigmal = max(.5*min(sigmal,0.41*0.5),1e-8)  
+        sigmal = (tke_interp**1.5)/dissip_interp
+        sigmal = max(.5*sigmal, 1e-8)  ! avoid numerical instability
 
-          sigma_inlet(i,j,eg)     = sigmal
-          umean_inlet(i,j,eg)     = vel_interp
-          intensity_inlet(i,j,eg) = sqrt(2./3.*tke_interp)
+        ! Optional: Limit eddy size far away from wall. 
+        ! Suggested in Jarrins PhD, but not implemented in Code Saturne
+        ! kappa is .41, 0.5 is pipe radius, therefore .41*.5
+        ! sigmal = max(.5*min(sigmal,0.41*0.5),1e-8)  
+
+        sigma_inlet(i,j,eg)     = sigmal
+        umean_inlet(i,j,eg)     = vel_interp
+        intensity_inlet(i,j,eg) = sqrt(2./3.*tke_interp)
 
 !-----Pick face 5 to evaluate surface Jacobian
-          inlet_area = inlet_area + area(i,j,5,e)
+        inlet_area = inlet_area + area(i,j,5,e)
 
-          enddo
-          enddo
+        enddo
+        enddo
 
-        endif
       enddo
 
       call gop(inlet_area,work,'+  ',1)
-
       end subroutine SEMinit
 
 c-----------------------------------------------------------------------
@@ -431,6 +428,7 @@ c     Generate eddy location randomly in bounding box
       include 'SIZE'
       include 'TSTEP_DEF'
       include 'TSTEP' ! ISTEP,IOSTEP
+      include 'USERPAR'
 
       real, intent(inout) :: ex(1),ey(1),ez(1),eps(3,1)
       integer, intent(in) :: n
@@ -444,7 +442,7 @@ c     in polar coordinates (!)
       rho = yplus_cutoff*sqrt(rnd_loc(0.0,1.0))  
       theta = rnd_loc(0.,twoPI) 
 
-      ex(i_l) = rho * cos(theta)
+      ex(i_l) = rho * cos(theta) + bent_radius
       ey(i_l) = rho * sin(theta)
       if(istep.eq.0)then
           ez(i_l) = rnd_loc(zbmin,zbmax)
@@ -563,7 +561,8 @@ c     point of interest
 
       ! bogus fallback output, to detect interpolation problems
 
-      write(*,*) ' !!! Warning !!! SEM failed at input interpolation'
+      write(*,*) '!! Warning !! SEM failed at input interpolation, pos',
+     $   pos_in
 
       vel_out = -1
       tke_out = -1

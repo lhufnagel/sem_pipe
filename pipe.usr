@@ -104,25 +104,46 @@ c     SEM inflow
 c-----------------------------------------------------------------------
 
       subroutine useric (ix,iy,iz,ieg)
-
+      use SEM, only: nElinlet, umean_inlet
       implicit none
 
       include 'SIZE_DEF'
       include 'SIZE'  ! L[XYZ]1,LELV
       include 'NEKUSE_DEF'
       include 'NEKUSE'! U[XYZ], [XYZ]
+      include 'USERPAR' 
 
       integer, intent(in) :: ix,iy,iz,ieg
 
-      real vel, tke, dissip, radius
+      integer ex
+      real vel, tmp
 
-      radius = sqrt(x**2. + y**2.)
-      call SEMinputData(radius, vel, tke, dissip )
+c     Prescribe mean inflow profile used by SEM as IC
+c     NOTE: The bending of the mean velocity does not look
+c     perfectly plausible. Especially for stronger curvatures 
+c     the velocity maximum seems focused towards the inner wall
 
-c     Simply prescribe mean inflow profile used by SEM as IC
-      Ux = 0.
+      ex = mod(ieg-1,nElInlet)+1 
+
+      vel = umean_inlet(ix,iy,ex)
+
       Uy = 0.
+      Ux = 0.
       Uz = vel
+
+      if (z.gt.0) then
+        tmp = atan2(z,x)
+        if (tmp.le.bent_phi) then
+          Ux = -vel*sin(tmp)
+          Uz = vel*cos(tmp)
+        else
+          Ux = -vel*sin(bent_phi) 
+          Uz = vel*cos(bent_phi)
+        endif
+      elseif (z.le.0.and.x.lt.0) then
+        Ux = -vel*sin(bent_phi) 
+        Uz = vel*cos(bent_phi)
+      endif
 
       return
       end
@@ -139,6 +160,7 @@ c-----------------------------------------------------------------------
       include 'SIZE' ! nelv
       include 'INPUT_DEF' 
       include 'INPUT' ! [xyz]c
+      include 'USERPAR' 
 
       real, parameter :: pi = 3.14159265358979323846264338327950288
       real ymin, ymax, xmin, xmax
@@ -154,7 +176,7 @@ c     Initialize SEM variables
       ymax = glmax(yc,n)
       xmin = glmin(xc,n)
       xmax = glmax(xc,n)
-      z_inlet  = glmin(zc,n)
+      z_inlet  = glmin(zc,n) + z_offset
       
       ! The bounding "box" (more precisely a cylinder for the pipe)
       ! is just large enough to contain the compact support of all
@@ -177,8 +199,50 @@ c-----------------------------------------------------------------------
 
       subroutine usrdat2
         implicit none
+      include 'SIZE_DEF'
+      include 'SIZE' ! nelv
+      include 'GEOM_DEF'
+      include 'GEOM' 
+      include 'NEKUSE_DEF'
+      include 'NEKUSE' ! XM1
+      include 'INPUT_DEF'
+      include 'INPUT' 
+      include 'USERPAR' 
+
+      integer i
+      real angle, circumf
+
 c     Initialize SEM, once GLL points are distributed
       call SEMinit
+
+c     Bend and translate the straight pipe
+c     The sweep of the bent arc is bent_phi
+c     The pipe inlet is moved at (0,r1,0) so that the center of the bend
+c     is in (0,0,0)
+      circumf = bent_radius*bent_phi
+
+c
+      do i=1,nx1*ny1*nz1*nelv
+        zm1(i,1,1,1) = zm1(i,1,1,1) + z_offset
+        xm1(i,1,1,1) = xm1(i,1,1,1) + bent_radius
+
+        if (zm1(i,1,1,1).gt.0.and.zm1(i,1,1,1).le.circumf) then
+          angle=zm1(i,1,1,1)/bent_radius
+          zm1(i,1,1,1) = xm1(i,1,1,1)*sin(angle)
+          xm1(i,1,1,1) = xm1(i,1,1,1)*cos(angle)
+        elseif (zm1(i,1,1,1).gt.circumf) then
+
+          angle = zm1(i,1,1,1) - circumf
+
+          zm1(i,1,1,1) = xm1(i,1,1,1)*sin(bent_phi)
+     $    + angle*cos(bent_phi)
+          xm1(i,1,1,1) = xm1(i,1,1,1)*cos(bent_phi) 
+     $    - angle*sin(bent_phi)
+        endif
+      enddo
+      param(59) = 1. ! 1 = deformed mesh
+
+        
       return
       end
 

@@ -1,4 +1,7 @@
 &USERPAR
+ bent_phi=1.57079632679, ! bent section: 90 degress
+ bent_radius=1, ! bent radius (defined from pipe centerline)
+ z_offset=-5, ! corresponds to upstream section
  /
 &AVG_LIST
  nSlices=3, ! upper limit of 50, adapt avg-all.f in case
