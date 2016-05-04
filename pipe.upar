@@ -14,10 +14,10 @@
  IFCHKPTRST=F,
  /
 &SEM_LIST
- neddy=5000,
- nElInlet=128,
- sigma_max=0.27486,
+ neddy=2000,
+ nElInlet=320,
+ sigma_max=0.14, ! overestimating this won't hurt
  yplus_cutoff=0.472222222, ! (R-10)+ at Re_tau = 180, R=.5
- bbox_max=0.056101,
+ bbox_max=0.0110786283057174,
  u0=1.0,
  /
