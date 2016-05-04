@@ -93,10 +93,10 @@ c     NOTE ::: This subroutine MAY NOT be called by every process
 c     SEM inflow
 
       iel=gllel(ieg)
-      ux=u_sem(ix,iy,iz,iel) 
-      uy=v_sem(ix,iy,iz,iel) 
-      uz=w_sem(ix,iy,iz,iel) + bulk_vel_diff
-         
+      ux= u_sem(ix,iy,iz,iel) 
+      uy= v_sem(ix,iy,iz,iel) 
+      uz= w_sem(ix,iy,iz,iel) + bulk_vel_diff
+
       temp = 0.0d0
 
       end
@@ -131,18 +131,21 @@ c     the velocity maximum seems focused towards the inner wall
       Ux = 0.
       Uz = vel
 
-      if (z.gt.0) then
-        tmp = atan2(z,x)
-        if (tmp.le.bent_phi) then
-          Ux = -vel*sin(tmp)
-          Uz = vel*cos(tmp)
-        else
+      if (abs(bent_phi).gt.1e-10) then
+
+        if (z.gt.0) then
+          tmp = atan2(z,x)
+          if (tmp.le.bent_phi) then
+            Ux = -vel*sin(tmp)
+            Uz = vel*cos(tmp)
+          else
+            Ux = -vel*sin(bent_phi) 
+            Uz = vel*cos(bent_phi)
+          endif
+        elseif (z.le.0.and.x.lt.0) then
           Ux = -vel*sin(bent_phi) 
           Uz = vel*cos(bent_phi)
         endif
-      elseif (z.le.0.and.x.lt.0) then
-        Ux = -vel*sin(bent_phi) 
-        Uz = vel*cos(bent_phi)
       endif
 
       return
@@ -176,7 +179,11 @@ c     Initialize SEM variables
       ymax = glmax(yc,n)
       xmin = glmin(xc,n)
       xmax = glmax(xc,n)
-      z_inlet  = glmin(zc,n) + z_offset
+      z_inlet  = glmin(zc,n)
+
+      if (abs(bent_phi).gt.1e-10) then
+        z_inlet  =z_inlet + z_offset
+      endif
       
       ! The bounding "box" (more precisely a cylinder for the pipe)
       ! is just large enough to contain the compact support of all
@@ -190,7 +197,7 @@ c     Initialize SEM variables
       Vb = (zbmax-zbmin)*ybmax**2.*pi
 c     Vb = (xbmax-xbmin)*(ybmax-ybmin)*(zbmax-zbmin)
 
-      if (nid.eq.0) write(*,*) 'Geom:',xbmin,xbmax,ybmin,ybmax,z_inlet
+      if (nid.eq.0) write(*,*)'SEM BBox',xbmin,xbmax,ybmin,ybmax,z_inlet
 
       return
       end
@@ -215,12 +222,14 @@ c-----------------------------------------------------------------------
 c     Initialize SEM, once GLL points are distributed
       call SEMinit
 
+      if (abs(bent_phi).gt.1e-10) then
+
 c     Bend and translate the straight pipe
 c     The sweep of the bent arc is bent_phi
 c     The pipe inlet is moved at (0,r1,0) so that the center of the bend
 c     is in (0,0,0)
-      circumf = bent_radius*bent_phi
 
+        circumf = bent_radius*bent_phi
 c
       do i=1,nx1*ny1*nz1*nelv
         zm1(i,1,1,1) = zm1(i,1,1,1) + z_offset
@@ -242,6 +251,7 @@ c
       enddo
       param(59) = 1. ! 1 = deformed mesh
 
+      endif
         
       return
       end

@@ -119,6 +119,8 @@
       include 'PARALLEL'        ! ISIZE, WDSIZE, LSIZE,CSIZE
       include 'USERPAR'         !
 
+      real, parameter :: pi = 3.1415926535897932384626433832795028
+
 !     argument list
       integer fid
 
@@ -129,7 +131,7 @@
       namelist /USERPAR/ bent_phi,bent_radius,z_offset
 !-----------------------------------------------------------------------
 !     default values
-      bent_phi = 3.1415/2
+      bent_phi = 90.
       bent_radius = 3.1415/4
       z_offset = 0
 !     read the file
@@ -144,6 +146,9 @@
 
       endif
       call err_chk(ierr,'Error reading USERPAR parameters.$')
+
+      ! convert to rad
+      bent_phi = bent_phi/180.*pi
 
 !     broadcast data
       call bcast(bent_phi,WDSIZE)

@@ -91,7 +91,7 @@ c-----------------------------------------------------------------------
       real vel_interp, tke_interp, dissip_interp, sigmal, radius
       real work
       integer fid, nlines
-      integer e, i, j, eg
+      integer e, i, j, eg, emod
 
       logical semstop
 
@@ -154,7 +154,7 @@ c     Read infile
 
       do e=1,nelv
         eg = lglel(e)
-        eg = mod(eg-1,nElInlet)+1 
+        emod = mod(eg-1,nElInlet)+1 
         ! Calculate eddy size and intensity at inlet only once
 
         do j=1,ly1
@@ -172,12 +172,12 @@ c     Read infile
         ! kappa is .41, 0.5 is pipe radius, therefore .41*.5
         ! sigmal = max(.5*min(sigmal,0.41*0.5),1e-8)  
 
-        sigma_inlet(i,j,eg)     = sigmal
-        umean_inlet(i,j,eg)     = vel_interp
-        intensity_inlet(i,j,eg) = sqrt(2./3.*tke_interp)
+        sigma_inlet(i,j,emod)     = sigmal
+        umean_inlet(i,j,emod)     = vel_interp
+        intensity_inlet(i,j,emod) = sqrt(2./3.*tke_interp)
 
 !-----Pick face 5 to evaluate surface Jacobian
-        inlet_area = inlet_area + area(i,j,5,e)
+        if (eg.le.nElInlet) inlet_area = inlet_area + area(i,j,5,e)
 
         enddo
         enddo
@@ -442,7 +442,11 @@ c     in polar coordinates (!)
       rho = yplus_cutoff*sqrt(rnd_loc(0.0,1.0))  
       theta = rnd_loc(0.,twoPI) 
 
-      ex(i_l) = rho * cos(theta) + bent_radius
+      ex(i_l) = rho * cos(theta) 
+      if (abs(bent_phi).gt.1e-10) then
+        ex(i_l) = ex(i_l) + bent_radius
+      endif
+
       ey(i_l) = rho * sin(theta)
       if(istep.eq.0)then
           ez(i_l) = rnd_loc(zbmin,zbmax)

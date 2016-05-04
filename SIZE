@@ -3,7 +3,7 @@ C
 C     HCUBE array dimensions
 C
       parameter (ldim=3)
-      parameter (lx1=6,ly1=lx1,lz1=lx1,lelt=590,lelv=lelt)
+      parameter (lx1=6,ly1=lx1,lz1=lx1,lelt=390,lelv=lelt)
       parameter (lxd=9,lyd=lxd,lzd=lxd)
       parameter (lelx=1,lely=1,lelz=1)
 c
@@ -12,7 +12,7 @@ c     NOTE: for IBM BLUE GENE LX1,LXD has to be an even number (double hummer)
       parameter (ldimt= 1)       ! upper limit for passive scalars + T
 
       parameter (lp =   2200)   ! upper limit for number of CPUs
-      parameter (lelg = 1900)  ! upper limit for total number of elements
+      parameter (lelg = 3900)  ! upper limit for total number of elements
 
 C
 C    ******************************************************************

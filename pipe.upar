@@ -1,12 +1,12 @@
 &USERPAR
- bent_phi=1.57079632679, ! bent section: 90 degress
- bent_radius=1, ! bent radius (defined from pipe centerline)
- z_offset=-5, ! corresponds to upstream section
+ bent_phi=0, ! bent section in degress
+ bent_radius=5, ! bent radius (defined from pipe centerline)
+ z_offset=0, ! corresponds to upstream section
  /
 &AVG_LIST
  nSlices=3, ! upper limit of 50, adapt avg-all.f in case
  nElperFace=128,
- delta_time_avg=4.0420266e-2, ! create statistical records every (1s)+
+ delta_time_avg=4.0420266e-2, ! =tstar create statistical records every (1s)+
  zslices=0.,1.,2.,
  /
 &CHKPOINT
@@ -14,10 +14,10 @@
  IFCHKPTRST=F,
  /
 &SEM_LIST
- neddy=2000,
- nElInlet=320,
- sigma_max=0.14, ! overestimating this won't hurt
- yplus_cutoff=0.472222222, ! (R-10)+ at Re_tau = 180, R=.5
+ neddy=1000,
+ nElInlet=128,
+ sigma_max=0.138, ! overestimating this a little won't hurt
+ yplus_cutoff=0.4724, ! R-10*lstar at Re_tau = 180, R=.5
  bbox_max=0.0110786283057174,
  u0=1.0,
  /

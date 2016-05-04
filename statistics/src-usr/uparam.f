@@ -100,6 +100,8 @@
       include 'PARALLEL'        ! ISIZE, WDSIZE, LSIZE,CSIZE
       include 'USERPAR'         !
 
+      real, parameter :: pi = 3.1415926535897932384626433832795028
+
 !     argument list
       integer fid
 
@@ -107,10 +109,12 @@
       integer ierr
 
 !     namelists; cannot be empty
-      namelist /USERPAR/ UPRM_PRB
+      namelist /USERPAR/ bent_phi,bent_radius,z_offset
 !-----------------------------------------------------------------------
 !     default values
-      UPRM_PRB = 10
+      bent_phi = 90.
+      bent_radius = 3.1415/4
+      z_offset = 0
 !     read the file
       ierr=0
       if (NID.eq.0) then
@@ -124,8 +128,13 @@
       endif
       call err_chk(ierr,'Error reading USERPAR parameters.$')
 
+      ! convert to rad
+      bent_phi = bent_phi/180.*pi
+
 !     broadcast data
-      call bcast(UPRM_PRB,ISIZE)
+      call bcast(bent_phi,WDSIZE)
+      call bcast(bent_radius,WDSIZE)
+      call bcast(z_offset,WDSIZE)
 
       return
       end
@@ -145,7 +154,7 @@
       integer ierr
 
 !     namelists; cannot be empty
-      namelist /USERPAR/ UPRM_PRB
+      namelist /USERPAR/ bent_phi,bent_radius,z_offset
 !-----------------------------------------------------------------------
       ierr=0
       if (NID.eq.0) then

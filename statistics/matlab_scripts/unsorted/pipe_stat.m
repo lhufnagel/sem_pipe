@@ -101,7 +101,7 @@ end
 hdr           = fread(fid,1,'int32')      ;
 CH            = fread(fid,hdr,'*char')    ;
 dum1          = fread(fid,1,'*float64')   ;
-Rer           = fread(fid,1,'*float64')   ;
+Reb           = fread(fid,1,'*float64')   ;
 Domain        = fread(fid,3,'*float64')   ;
 nel           = fread(fid,1,'int32')      ;
 Poly          = fread(fid,3,'int32')      ;
@@ -151,7 +151,6 @@ fclose(fid);
 % D : pipe diameter.
 % nu: kinematic viscosity
 D   = round(Domain(1));
-Reb = Rer*D;
 Ub  = 1;
 R   = D/2;
 rho = 1;

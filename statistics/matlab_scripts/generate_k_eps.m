@@ -5,7 +5,7 @@ zz_budg = importdata('180_ZZ_Budget.dat'); % El Khoury data
 
 nu = 1/5300;
 radius = .5;
-%Re_tau = 3.6121788913802544E+02;
+% Re_tau = 3.6121788913802544E+02;
 %u_tau = 6.1746647715901784E-02;
 Re_tau = 1.8105409983122749E+02;
 u_tau = 6.8322301823104711E-02;
@@ -23,7 +23,8 @@ end
 % Turn in to real radius, instead of (1-r). 
 % Rescale to [0,0.5]
 r = radius*(1-r);
-r(1)=0; r(end)=radius+1e-8; % compensate for floating point precision
+r(1)=0; r(end)=radius+1e-4; 
+% compensate for floating point precision of mesh radius
 Umean = ref.data(:,4); 
 
 ref_k = u_tau^2*.5*(ref.data(:,5).^2+ref.data(:,6).^2+ref.data(:,7).^2);
@@ -56,6 +57,8 @@ if (ref_r(r_pos) < 10)
     warning(['There will be no eddies in SEM below y+ < 10, but the bounding-box' ...
     ' maximum stems from an eddy in this region. Adapt SEM code ..']);
 end
+
+yplus_cutoff = radius - 10*nu/u_tau
 
 clf;
 subplot(2,1,1);
