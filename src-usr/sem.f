@@ -296,20 +296,25 @@ c --- generate initial eddy distribution ----
     
       if (istep.eq.0) then
           clock = int(dnekclock())
+
+c     !BEWARE! This seems dangerously non random,
+c     when there are less eddies than processors
+c     (Judged by looking at eddy positions..)
           iseed=(nid+1)*11 + clock + 1
           call  ZBQLINI(iseed)
 
-          call distribute_eddy(neddy,neddy_ll,eddy_pt)
+          call distribute_eddies(neddy_ll)
+
 c     Generate local eddies with locations ex,ey,ez
           do i=1,neddy_ll
               i_l = eddy_pt(i)
-              call gen_eddy(ex,ey,ez,eps,i_l)
+              call gen_eddy(i_l)
           enddo   
 c     zeroing eddies off this proc
-          call zero_nonlocal_eddies(ex,ey,ez,eps,neddy_ll,neddy,eddy_pt)
+          call zero_nonlocal_eddies(neddy_ll)
       else 
-          call advect_recycle_eddies(ex,ey,ez,eps,neddy_ll,eddy_pt)
-          call zero_nonlocal_eddies(ex,ey,ez,eps,neddy_ll,neddy,eddy_pt)
+          call advect_recycle_eddies(neddy_ll)
+          call zero_nonlocal_eddies(neddy_ll)
       endif
 
 c     Gather eddies on each processor
@@ -385,18 +390,17 @@ c         if (abs(zm1(1,1,1,e)-z_inlet).lt.1e-13) then
       end subroutine synthetic_eddies
 c-----------------------------------------------------------------------
 c     distribute eddies across all processors
-c     neddy - total # eddies
 c     nl    - local # eddies
-c     pt    - local pointer
-      subroutine distribute_eddy(neddy,nl,pt)
+c     eddy_pt    - local/global mapping
+      subroutine distribute_eddies(nl)
+        use SEM, only: neddy, eddy_pt
       implicit none
       include 'SIZE_DEF'
       include 'SIZE'
       include 'PARALLEL_DEF'
       include 'PARALLEL'
 
-      integer, intent(in) :: neddy
-      integer, intent(out) :: nl, pt(neddy)
+      integer, intent(out) :: nl
       integer i, nbatch0,nbatch1,ibnd,istart
 
       nbatch0 = neddy/np + 1
@@ -411,15 +415,15 @@ c     pt    - local pointer
       endif
 
       do i=1,nl
-         pt(i) = istart + (i-1)
+         eddy_pt(i) = istart + (i-1)
       enddo
 
       return
-      end subroutine distribute_eddy
+      end subroutine distribute_eddies
 c-----------------------------------------------------------------------
 c     Generate eddy location randomly in bounding box
-      subroutine gen_eddy(ex,ey,ez,eps,n)
-      use SEM, only: zbmin, zbmax, yplus_cutoff
+      subroutine gen_eddy(n)
+      use SEM, only: ex,ey,ez,eps, zbmin, zbmax, yplus_cutoff
       implicit none
 
       real, parameter :: twoPi = 6.283185307179586476925286766
@@ -430,7 +434,6 @@ c     Generate eddy location randomly in bounding box
       include 'TSTEP' ! ISTEP,IOSTEP
       include 'USERPAR'
 
-      real, intent(inout) :: ex(1),ey(1),ez(1),eps(3,1)
       integer, intent(in) :: n
       real rnd, rho, theta
       integer j,i_l
@@ -465,6 +468,10 @@ c     in polar coordinates (!)
 c-----------------------------------------------------------------------
       real function rnd_loc (lower,upper)
       implicit none
+      include 'SIZE_DEF'
+      include 'SIZE'
+      include 'PARALLEL_DEF'
+      include 'PARALLEL'
 
       real, intent(in) :: lower, upper
       real rnd
@@ -476,21 +483,24 @@ c-----------------------------------------------------------------------
       end function rnd_loc
 c-----------------------------------------------------------------------
 c     Set energies of nonlocal eddies to zero
-      subroutine zero_nonlocal_eddies(ex,ey,ez,eps,neddy_ll,neddy,pt)
+      subroutine zero_nonlocal_eddies(neddy_ll)
+      use SEM, only: ex,ey,ez,eps, neddy, eddy_pt
       implicit none
-c     include 'SIZE'
 
-      integer, intent(in) :: neddy_ll,neddy,pt(1)
-      real, intent(inout) :: ex(1),ey(1),ez(1),eps(3,1)
+      integer, intent(in) :: neddy_ll
       integer i,k, i1, i2
 
       ! when there are fewer eddies than processors
       if (neddy_ll.eq.0) then 
+        call rzero(ex,neddy) 
+        call rzero(ey,neddy) 
+        call rzero(ez,neddy) 
+        call rzero(eps,3*neddy) 
         return
       endif
 
-      i1 = pt(1)-1
-      i2 = pt(neddy_ll)+1
+      i1 = eddy_pt(1)-1
+      i2 = eddy_pt(neddy_ll)+1
 
       do i=1,i1
          ex(i) = 0.0
@@ -515,26 +525,26 @@ c     include 'SIZE'
 
 c-----------------------------------------------------------------------
 c     Convect eddies and recycle by regenerating the location
-      subroutine advect_recycle_eddies(ex,ey,ez,eps,n,pt)
-      use SEM, only: zbmax,u0
+      subroutine advect_recycle_eddies(n)
+      use SEM, only: zbmax,u0, neddy, ex, ey, ez, eps, eddy_pt
       implicit none
       include 'SIZE_DEF' ! DT
       include 'SIZE' ! DT
       include 'TSTEP_DEF' ! DT
       include 'TSTEP'
 
-      integer, intent(in) :: n, pt(1)
-      real, intent(inout) :: ex(1),ey(1),ez(1),eps(3,1)
+      integer, intent(in) :: n
      
       integer i,i_l
 
       do i=1,n
-        i_l = pt(i)
+        i_l = eddy_pt(i)
         ez(i_l) = ez(i_l) + u0*DT
+
                             
 c     ---- recycle exiting eddies ----
         if (ez(i_l).gt.(zbmax))then
-          call gen_eddy(ex,ey,ez,eps,i_l)
+          call gen_eddy(i_l)
         endif
       enddo
 

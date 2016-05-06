@@ -29,7 +29,7 @@ Umean = ref.data(:,4);
 
 ref_k = u_tau^2*.5*(ref.data(:,5).^2+ref.data(:,6).^2+ref.data(:,7).^2);
 % George's Data was generated on Pipe with radius = 1. Epsilon scales
-ref_eps = 1./radius*(- u_tau^4/nu*.5*(rr_budg.data(:,8) + zz_budg.data(:,8) + tt_budg.data(:,8)));
+ref_eps = 1./(2.*radius)*(- u_tau^4/nu*.5*(rr_budg.data(:,8) + zz_budg.data(:,8) + tt_budg.data(:,8)));
 
 if (length(ref_k) ~= length(Umean) | ...
   length(Umean) ~= length(ref_eps) | ...
