@@ -484,6 +484,11 @@ c     include 'SIZE'
       real, intent(inout) :: ex(1),ey(1),ez(1),eps(3,1)
       integer i,k, i1, i2
 
+      ! when there are fewer eddies than processors
+      if (neddy_ll.eq.0) then 
+        return
+      endif
+
       i1 = pt(1)-1
       i2 = pt(neddy_ll)+1
 
