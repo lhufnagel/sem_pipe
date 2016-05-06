@@ -226,25 +226,25 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         call avg8(stat(1,40),vx,vx,vy,vy,alpha,beta,ntot,'v4')      ! <uuvv> (v: instantaneous)
         call avg8(stat(1,41),vx,vy,vy,vy,alpha,beta,ntot,'w4')      ! <uvvv> (w: instantaneous)	 
 
-        call avg7(stat(1,42),duidxj,alpha,beta,ntot,'e11',ifverbose)   ! e11: <du/dx.du/dx + du/dy.du/dy + du/dz.du/dz> (u: instantaneous)
-        call avg7(stat(1,43),duidxj,alpha,beta,ntot,'e22',ifverbose)   ! e22: <dv/dx.dv/dx + dv/dy.dv/dy + dv/dz.dv/dz> (v: instantaneous) 
-        call avg7(stat(1,44),duidxj,alpha,beta,ntot,'e33',ifverbose)   ! e33: <dw/dx.dw/dx + dw/dy.dw/dy + dw/dz.dw/dz> (w: instantaneous)
+        call avg7(stat(1,42),duidxj,alpha,beta,ntot,'e11')   ! e11: <du/dx.du/dx + du/dy.du/dy + du/dz.du/dz> (u: instantaneous)
+        call avg7(stat(1,43),duidxj,alpha,beta,ntot,'e22')   ! e22: <dv/dx.dv/dx + dv/dy.dv/dy + dv/dz.dv/dz> (v: instantaneous) 
+        call avg7(stat(1,44),duidxj,alpha,beta,ntot,'e33')   ! e33: <dw/dx.dw/dx + dw/dy.dw/dy + dw/dz.dw/dz> (w: instantaneous)
 
-        call avg7(stat(1,45),duidxj,alpha,beta,ntot,'e12',ifverbose)   ! e12: <du/dx.dv/dx + du/dy.dv/dy + du/dz.dv/dz> (u, v: instantaneous)       
-        call avg7(stat(1,46),duidxj,alpha,beta,ntot,'e13',ifverbose)   ! e13: <du/dx.dw/dx + du/dy.dw/dy + du/dz.dw/dz> (u, w: instantaneous) 
-        call avg7(stat(1,47),duidxj,alpha,beta,ntot,'e23',ifverbose)   ! e23: <dv/dx.dw/dx + dv/dy.dw/dy + dv/dz.dw/dz> (v, w: instantaneous) 
+        call avg7(stat(1,45),duidxj,alpha,beta,ntot,'e12')   ! e12: <du/dx.dv/dx + du/dy.dv/dy + du/dz.dv/dz> (u, v: instantaneous)       
+        call avg7(stat(1,46),duidxj,alpha,beta,ntot,'e13')   ! e13: <du/dx.dw/dx + du/dy.dw/dy + du/dz.dw/dz> (u, w: instantaneous) 
+        call avg7(stat(1,47),duidxj,alpha,beta,ntot,'e23')   ! e23: <dv/dx.dw/dx + dv/dy.dw/dy + dv/dz.dw/dz> (v, w: instantaneous) 
 
-        call avg5(stat(1,48),p0,duidxj,alpha,beta,ntot,'nnn',ifverbose) ! <du/dx>
-        call avg5(stat(1,49),p0,duidxj,alpha,beta,ntot,'ooo',ifverbose) ! <du/dy>
-        call avg5(stat(1,50),p0,duidxj,alpha,beta,ntot,'ppp',ifverbose) ! <du/dz>
+        call avg5(stat(1,48),p0,duidxj,alpha,beta,ntot,'nnn') ! <du/dx>
+        call avg5(stat(1,49),p0,duidxj,alpha,beta,ntot,'ooo') ! <du/dy>
+        call avg5(stat(1,50),p0,duidxj,alpha,beta,ntot,'ppp') ! <du/dz>
 
-        call avg5(stat(1,51),p0,duidxj,alpha,beta,ntot,'qqq',ifverbose) ! <dv/dx>
-        call avg5(stat(1,52),p0,duidxj,alpha,beta,ntot,'rrr',ifverbose) ! <dv/dy>
-        call avg5(stat(1,53),p0,duidxj,alpha,beta,ntot,'sss',ifverbose) ! <dv/dz>
+        call avg5(stat(1,51),p0,duidxj,alpha,beta,ntot,'qqq') ! <dv/dx>
+        call avg5(stat(1,52),p0,duidxj,alpha,beta,ntot,'rrr') ! <dv/dy>
+        call avg5(stat(1,53),p0,duidxj,alpha,beta,ntot,'sss') ! <dv/dz>
 
-        call avg5(stat(1,54),p0,duidxj,alpha,beta,ntot,'ttt',ifverbose) ! <dw/dx>
-        call avg5(stat(1,55),p0,duidxj,alpha,beta,ntot,'uuu',ifverbose) ! <dw/dy>
-        call avg5(stat(1,56),p0,duidxj,alpha,beta,ntot,'vvv',ifverbose) ! <dw/dz>
+        call avg5(stat(1,54),p0,duidxj,alpha,beta,ntot,'ttt') ! <dw/dx>
+        call avg5(stat(1,55),p0,duidxj,alpha,beta,ntot,'uuu') ! <dw/dy>
+        call avg5(stat(1,56),p0,duidxj,alpha,beta,ntot,'vvv') ! <dw/dz>
 
         call avg1(stat(1,57),omega_r,alpha,beta,ntot,'velx',ifverbose)  ! <omr>
         call avg1(stat(1,58),omega_t,alpha,beta,ntot,'vely',ifverbose)  ! <omt>
