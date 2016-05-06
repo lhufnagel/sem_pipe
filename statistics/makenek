@@ -7,10 +7,18 @@ SOURCE_ROOT="`readlink -f $HOME/nek5_svn/trunk/nek`"
 SOURCE_ROOT2="$SOURCE_ROOT/cmt" 
 
 # Fortran compiler
-F77="mpif77 -mcmodel=large"
+if  `uname -a | grep -q -i beskow`; then
+  F77="ftn"
+else
+  F77="mpif77 -mcmodel=large"
+fi
 
 # C compiler
-CC="mpicc"
+if  `uname -a | grep -q -i beskow`; then
+  CC="cc"
+else
+  CC="mpicc"
+fi
 
 # pre-processor symbol list 
 # (set PPLIST=? to get a list of available symbols)
