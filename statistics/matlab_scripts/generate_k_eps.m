@@ -51,15 +51,6 @@ sigma=ref_k.^(3./2.)./ref_eps;
 [sigma_max,maxi] = max(sigma);
 sigma_max
 
-[max_y,r_pos]=max(r(ref_r > 10)+.5*sigma(ref_r > 10));
-bbox_max = max_y-radius
-if (ref_r(r_pos) < 10)
-    warning(['There will be no eddies in SEM below y+ < 10, but the bounding-box' ...
-    ' maximum stems from an eddy in this region. Adapt SEM code ..']);
-end
-
-yplus_cutoff = radius - 10*nu/u_tau
-
 clf;
 subplot(2,1,1);
 semilogx(ref_r,sigma);

@@ -28,15 +28,13 @@ C
          ! Warning: This optimization assumes that actually the first
          ! nElInlet mesh-elements are the inlet elements.
          ! In the pipe-case the mesh is created accordingly, 
-         ! and nElInlet = nelperface
+         ! and nElInlet == nelperface
 
-         real                :: yplus_cutoff 
-         ! yplus above which no eddies are generated, to maintain
-         ! divergence freedom. 
-         ! Typically this should be 10 delta+ from the wall.
          real                :: sigma_max 
          ! upper eddy size bound (due to k&eps)
          real                :: bbox_max
+         ! rescale length scales by (multiplying) this factor
+         real                :: sigma_factor
          ! maximum extent of eddies (radial direction here)
          real                :: u0 ! bulk velocity
 
@@ -92,6 +90,7 @@ c-----------------------------------------------------------------------
       real work
       integer fid, nlines
       integer e, i, j, eg, emod
+      real, parameter :: pi = 3.14159265358979323846264338327950288
 
       logical semstop
 
@@ -151,6 +150,7 @@ c     Read infile
       allocate(umean_inlet(lx1,ly1,nElInlet))
 
       inlet_area = 0
+      bbox_max = 0
 
       do e=1,nelv
         eg = lglel(e)
@@ -165,7 +165,8 @@ c     Read infile
         call SEMinputData(radius,vel_interp,tke_interp,dissip_interp)
 
         sigmal = (tke_interp**1.5)/dissip_interp
-        sigmal = max(.5*sigmal, 1e-8)  ! avoid numerical instability
+        sigmal = 0.5*sigma_factor*sigmal ! make lengthscale a (nondim) radius
+        sigmal = max(sigmal, 1e-6)  ! avoid numerical instability
 
         ! Optional: Limit eddy size far away from wall. 
         ! Suggested in Jarrins PhD, but not implemented in Code Saturne
@@ -176,6 +177,9 @@ c     Read infile
         umean_inlet(i,j,emod)     = vel_interp
         intensity_inlet(i,j,emod) = sqrt(2./3.*tke_interp)
 
+        !Contains radius of cylinder that support of all eddies
+        bbox_max = max(bbox_max, radius + sigmal)
+
 !-----Pick face 5 to evaluate surface Jacobian
         if (eg.le.nElInlet) inlet_area = inlet_area + area(i,j,5,e)
 
@@ -184,15 +188,19 @@ c     Read infile
 
       enddo
 
+      Vb = (zbmax-zbmin)*bbox_max**2.*pi
+c     Vb = (xbmax-xbmin)*(ybmax-ybmin)*(zbmax-zbmin)
+
       call gop(inlet_area,work,'+  ',1)
+
       end subroutine SEMinit
 
 c-----------------------------------------------------------------------
 
 !     read parameters SEM
       subroutine SEM_param_in(fid)
-        use SEM, only: nEddy, yplus_cutoff, nElInlet, 
-     $                 sigma_max, bbox_max, u0
+        use SEM, only: nEddy, nElInlet, 
+     $                 sigma_max, u0
       implicit none
 
       include 'SIZE_DEF'
@@ -207,15 +215,12 @@ c-----------------------------------------------------------------------
       integer ierr
 
 !     namelists
-      namelist /SEM_list/ nEddy, nElInlet, yplus_cutoff,
-     $        sigma_max, bbox_max, u0
+      namelist /SEM_list/ nEddy, nElInlet, sigma_max, u0
 !-----------------------------------------------------------------------
 !     default values
       nEddy = 5000
       nElInlet = 256
-      yplus_cutoff = 0.4
       sigma_max = 0.25
-      bbox_max = 0.05
       u0 = 1.0
 !     read the file
       ierr=0
@@ -227,9 +232,7 @@ c-----------------------------------------------------------------------
 !     broadcast data
       call bcast(nEddy,ISIZE)
       call bcast(nElInlet,ISIZE)
-      call bcast(yplus_cutoff, WDSIZE)
       call bcast(sigma_max, WDSIZE)
-      call bcast(bbox_max, WDSIZE)
       call bcast(u0, WDSIZE)
 
       return
@@ -237,8 +240,7 @@ c-----------------------------------------------------------------------
 !***********************************************************************
 !     write parameters checkpoint
       subroutine SEM_param_out(fid)
-        use SEM, only: nEddy, yplus_cutoff, nElInlet, 
-     $                 sigma_max, bbox_max, u0
+        use SEM, only: nEddy, nElInlet, sigma_max,  u0
       implicit none
 
       include 'SIZE_DEF'
@@ -251,8 +253,7 @@ c-----------------------------------------------------------------------
       integer ierr
 
 !     namelists
-      namelist /SEM_list/ nEddy, nElInlet, yplus_cutoff,
-     $        sigma_max, bbox_max, u0
+      namelist /SEM_list/ nEddy, nElInlet, sigma_max, u0
 !-----------------------------------------------------------------------
       ierr=0
       if (NID.eq.0) then
@@ -290,7 +291,7 @@ C=======================================================================
       integer clock, e,eg, 
      &      i,j,i_l,ne,nv,iseed
       !     functions
-      real dnekclock, sqrtVn
+      real dnekclock, sqrtn
   
 c --- generate initial eddy distribution ----
     
@@ -334,7 +335,7 @@ c ---- compute velocity contribution of eddies ------
       call rzero(w_sem,nv)
       bulk_vel_diff = 0
 
-      sqrtVn = sqrt(Vb/real(neddy))
+      sqrtn = sqrt(1./real(neddy))
 
       do e=1,nelv
         eg = lglel(e)
@@ -351,6 +352,8 @@ c         if (abs(zm1(1,1,1,e)-z_inlet).lt.1e-13) then
            v_sem(i,j,1,e) = 0
            w_sem(i,j,1,e) = umean_inlet(i,j,eg)
 
+           !WTF, TSFP paper writes 15/16, while rest of literature/code uses 16/15
+
            do ne=1,neddy
             rrx = (xm1(i,j,1,e)-ex(ne))
             rry = (ym1(i,j,1,e)-ey(ne))
@@ -359,18 +362,21 @@ c         if (abs(zm1(1,1,1,e)-z_inlet).lt.1e-13) then
             rr = sqrt(rrx*rrx + rry*rry + rrz*rrz)
 
             if (rr.lt.sigma_inlet(i,j,eg)) then
-              fx = sqrt32*(1.0-abs(rrx)/sigma_inlet(i,j,eg))
-              fy = sqrt32*(1.0-abs(rry)/sigma_inlet(i,j,eg))
-              fz = sqrt32*(1.0-abs(rrz)/sigma_inlet(i,j,eg))
+              fx = rry*eps(3,ne)-rrz*eps(2,ne)
+              fy = rrz*eps(1,ne)-rrx*eps(3,ne)
+              fz = rrx*eps(2,ne)-rry*eps(1,ne)
 
-              ff=fx*fy*fz*sqrtVn/sqrt(sigma_inlet(i,j,eg))**3
+           !fx = fx * intensity_inlet(i,j,eg)/sigma_inlet(i,j,eg)
+           !etc...
 
-              u_sem(i,j,1,e) = u_sem(i,j,1,e) + 
-     $                      intensity_inlet(i,j,eg)*eps(1,ne)*ff
-              v_sem(i,j,1,e) = v_sem(i,j,1,e) + 
-     $                      intensity_inlet(i,j,eg)*eps(2,ne)*ff
-              w_sem(i,j,1,e) = w_sem(i,j,1,e) + 
-     $                      intensity_inlet(i,j,eg)*eps(3,ne)*ff
+       ff=sqrt(16.*Vb/(15.*pi))*sin(PI*rr/sigma_inlet(i,j,eg))**2.0
+       ff= ff/rr**2.0
+            ff = ff*intensity_inlet(i,j,eg)/sqrt(sigma_inlet(i,j,eg))
+            ff = ff*sqrtn
+
+              u_sem(i,j,1,e) = u_sem(i,j,1,e) + fx*ff
+              v_sem(i,j,1,e) = v_sem(i,j,1,e) + fy*ff
+              w_sem(i,j,1,e) = w_sem(i,j,1,e) + fz*ff
             endif
            enddo         
 
@@ -423,7 +429,7 @@ c     eddy_pt    - local/global mapping
 c-----------------------------------------------------------------------
 c     Generate eddy location randomly in bounding box
       subroutine gen_eddy(n)
-      use SEM, only: ex,ey,ez,eps, zbmin, zbmax, yplus_cutoff
+      use SEM, only: ex,ey,ez,eps, zbmin, zbmax, bbox_max
       implicit none
 
       real, parameter :: twoPi = 6.283185307179586476925286766
@@ -442,7 +448,7 @@ c     Generate eddy location randomly in bounding box
 
 c     Generate uniformly distributed random locations 
 c     in polar coordinates (!)
-      rho = yplus_cutoff*sqrt(rnd_loc(0.0,1.0))  
+      rho = bbox_max*sqrt(rnd_loc(0.0,1.0))  
       theta = rnd_loc(0.,twoPI) 
 
       ex(i_l) = rho * cos(theta) 

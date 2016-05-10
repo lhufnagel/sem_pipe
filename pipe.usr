@@ -1,6 +1,6 @@
 c-----------------------------------------------------------------------
 c     Turbulent pipe flow 
-c     Along (positive) x-direction
+c     Along (positive) z-direction
 c     
 c     Turbulence at inlet is "generated" with synthetic eddy method 
 c     JARRIN, Nicolas, et al. A synthetic-eddy-method for
@@ -154,8 +154,8 @@ c     the velocity maximum seems focused towards the inner wall
 c-----------------------------------------------------------------------
 
       subroutine usrdat
-      use SEM, only: xbmin, xbmax, ybmin, ybmax, zbmin, zbmax, Vb,
-     &   bbox_max, sigma_max, z_inlet
+      use SEM, only: zbmin, zbmax,
+     &   sigma_max, z_inlet, sigma_factor
       implicit none
       real, external :: glmin, glmax ! defined in math.f
 
@@ -165,39 +165,39 @@ c-----------------------------------------------------------------------
       include 'INPUT' ! [xyz]c
       include 'USERPAR' 
 
-      real, parameter :: pi = 3.14159265358979323846264338327950288
-      real ymin, ymax, xmin, xmax
-      integer n
+      real ymax
 
 !     to read user module parameters
       call uprm_read
 
 c     Initialize SEM variables
-      n = 8*nelv
+      
+      ! The bounding "box" (actually a cylinder for the pipe)
+      ! is just large enough to contain the compact support of all
+      ! eddies. 
 
-      ymin = glmin(yc,n)
-      ymax = glmax(yc,n)
-      xmin = glmin(xc,n)
-      xmax = glmax(xc,n)
-      z_inlet  = glmin(zc,n)
+c     ymin = glmin(yc,8*nelv)
+      ymax = glmax(yc,8*nelv) 
+c     xmin = glmin(xc,8*nelv)
+c     xmax = glmax(xc,8*nelv)
+      z_inlet  = glmin(zc,8*nelv)
 
       if (abs(bent_phi).gt.1e-10) then
         z_inlet  =z_inlet + z_offset
       endif
-      
-      ! The bounding "box" (more precisely a cylinder for the pipe)
-      ! is just large enough to contain the compact support of all
-      ! eddies. 
-      xbmin = xmin - bbox_max
-      xbmax = xmax + bbox_max
-      ybmin = ymin - bbox_max
-      ybmax = ymax + bbox_max
+
+c     xbmin = xmin - bbox_max  
+! for the pipe bbox_max and Vb is determined dynamically
+c     xbmax = xmax + bbox_max
+c     ybmin = ymin - bbox_max
+c     ybmax = ymax + bbox_max
+
       zbmin = z_inlet - .5*sigma_max
       zbmax = z_inlet + .5*sigma_max
-      Vb = (zbmax-zbmin)*ybmax**2.*pi
-c     Vb = (xbmax-xbmin)*(ybmax-ybmin)*(zbmax-zbmin)
 
-      if (nid.eq.0) write(*,*)'SEM BBox',xbmin,xbmax,ybmin,ybmax,z_inlet
+      ! eddies will be scaled by pipe diameter
+      sigma_factor = 1./(2.*ymax) 
+
 
       return
       end

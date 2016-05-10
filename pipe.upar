@@ -17,7 +17,5 @@
  neddy=5000,
  nElInlet=128,
  sigma_max=0.2749, ! overestimating this a little won't hurt
- yplus_cutoff=0.472383944883541, ! R-10*lstar at Re_tau = 180, R=.5
- bbox_max=0.056101325115829,
  u0=1.0,
  /
