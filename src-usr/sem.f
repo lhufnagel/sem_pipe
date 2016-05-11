@@ -166,7 +166,7 @@ c     Read infile
 
         sigmal = (tke_interp**1.5)/dissip_interp
         sigmal = 0.5*sigma_factor*sigmal ! make lengthscale a (nondim) radius
-        sigmal = max(sigmal, 1e-6)  ! avoid numerical instability
+        sigmal = max(sigmal, 1e-4)  ! avoid numerical instability
 
         ! Optional: Limit eddy size far away from wall. 
         ! Suggested in Jarrins PhD, but not implemented in Code Saturne
@@ -366,12 +366,13 @@ c         if (abs(zm1(1,1,1,e)-z_inlet).lt.1e-13) then
               fy = rrz*eps(1,ne)-rrx*eps(3,ne)
               fz = rrx*eps(2,ne)-rry*eps(1,ne)
 
-           !fx = fx * intensity_inlet(i,j,eg)/sigma_inlet(i,j,eg)
-           !etc...
+           fx = fx * intensity_inlet(i,j,eg)/sigma_inlet(i,j,eg)
+           fy = fy * intensity_inlet(i,j,eg)/sigma_inlet(i,j,eg)
+           fz = fz * intensity_inlet(i,j,eg)/sigma_inlet(i,j,eg)
 
-       ff=sqrt(16.*Vb/(15.*pi))*sin(PI*rr/sigma_inlet(i,j,eg))**2.0
-       ff= ff/rr**2.0
-            ff = ff*intensity_inlet(i,j,eg)/sqrt(sigma_inlet(i,j,eg))
+       ff=sqrt(16.*Vb/(15.*pi*sigma_inlet(i,j,eg)**3.0))
+      ff=ff * sin(PI*rr/sigma_inlet(i,j,eg))**2.0*rr/sigma_inlet(i,j,eg)
+       ff= ff/((rr/sigma_inlet(i,j,eg))**3.0)
             ff = ff*sqrtn
 
               u_sem(i,j,1,e) = u_sem(i,j,1,e) + fx*ff
