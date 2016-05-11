@@ -355,20 +355,16 @@ c         if (abs(zm1(1,1,1,e)-z_inlet).lt.1e-13) then
            !WTF, TSFP paper writes 15/16, while rest of literature/code uses 16/15
 
            do ne=1,neddy
-            rrx = (xm1(i,j,1,e)-ex(ne))/sigma_inlet(i,j,eg)
-            rry = (ym1(i,j,1,e)-ey(ne))/sigma_inlet(i,j,eg)
-            rrz = (zm1(i,j,1,e)-ez(ne))/sigma_inlet(i,j,eg)
+            rrx = (xm1(i,j,1,e)-ex(ne))
+            rry = (ym1(i,j,1,e)-ey(ne))
+            rrz = (zm1(i,j,1,e)-ez(ne))
 
             rr = sqrt(rrx*rrx + rry*rry + rrz*rrz)
 
             if (rr.lt.sigma_inlet(i,j,eg)) then
-              fx = intensity_inlet(i,j,eg)*(rry*eps(3,ne)-rrz*eps(2,ne))
-              fy = intensity_inlet(i,j,eg)*(rrz*eps(1,ne)-rrx*eps(3,ne))
-              fz = intensity_inlet(i,j,eg)*(rrx*eps(2,ne)-rry*eps(1,ne))
-
-              fx = sigma_inlet(i,j,eg) * (1.-rrx*rrx) * fx
-              fy = sigma_inlet(i,j,eg) * (1.-rry*rry) * fy
-              fz = sigma_inlet(i,j,eg) * (1.-rrz*rrz) * fz
+              fx = rry*eps(3,ne)-rrz*eps(2,ne)
+              fy = rrz*eps(1,ne)-rrx*eps(3,ne)
+              fz = rrx*eps(2,ne)-rry*eps(1,ne)
 
            fx = fx * intensity_inlet(i,j,eg)/sigma_inlet(i,j,eg)
            fy = fy * intensity_inlet(i,j,eg)/sigma_inlet(i,j,eg)
