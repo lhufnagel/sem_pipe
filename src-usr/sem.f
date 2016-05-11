@@ -166,7 +166,7 @@ c     Read infile
 
         sigmal = (tke_interp**1.5)/dissip_interp
         sigmal = 0.5*sigma_factor*sigmal ! make lengthscale a (nondim) radius
-        sigmal = max(sigmal, 1e-6)  ! avoid numerical instability
+        sigmal = max(sigmal, 1e-4)  ! avoid numerical instability
 
         ! Optional: Limit eddy size far away from wall. 
         ! Suggested in Jarrins PhD, but not implemented in Code Saturne
@@ -355,24 +355,28 @@ c         if (abs(zm1(1,1,1,e)-z_inlet).lt.1e-13) then
            !WTF, TSFP paper writes 15/16, while rest of literature/code uses 16/15
 
            do ne=1,neddy
-            rrx = (xm1(i,j,1,e)-ex(ne))
-            rry = (ym1(i,j,1,e)-ey(ne))
-            rrz = (zm1(i,j,1,e)-ez(ne))
+            rrx = (xm1(i,j,1,e)-ex(ne))/sigma_inlet(i,j,eg)
+            rry = (ym1(i,j,1,e)-ey(ne))/sigma_inlet(i,j,eg)
+            rrz = (zm1(i,j,1,e)-ez(ne))/sigma_inlet(i,j,eg)
 
             rr = sqrt(rrx*rrx + rry*rry + rrz*rrz)
 
             if (rr.lt.sigma_inlet(i,j,eg)) then
-              fx = rry*eps(3,ne)-rrz*eps(2,ne)
-              fy = rrz*eps(1,ne)-rrx*eps(3,ne)
-              fz = rrx*eps(2,ne)-rry*eps(1,ne)
+              fx = intensity_inlet(i,j,eg)*(rry*eps(3,ne)-rrz*eps(2,ne))
+              fy = intensity_inlet(i,j,eg)*(rrz*eps(1,ne)-rrx*eps(3,ne))
+              fz = intensity_inlet(i,j,eg)*(rrx*eps(2,ne)-rry*eps(1,ne))
+
+              fx = sigma_inlet(i,j,eg) * (1.-rrx*rrx) * fx
+              fy = sigma_inlet(i,j,eg) * (1.-rry*rry) * fy
+              fz = sigma_inlet(i,j,eg) * (1.-rrz*rrz) * fz
 
            !fx = fx * intensity_inlet(i,j,eg)/sigma_inlet(i,j,eg)
            !etc...
 
-       ff=sqrt(16.*Vb/(15.*pi))*sin(PI*rr/sigma_inlet(i,j,eg))**2.0
-       ff= ff/rr**2.0
-            ff = ff*intensity_inlet(i,j,eg)/sqrt(sigma_inlet(i,j,eg))
-            ff = ff*sqrtn
+c      ff=sqrt(16.*Vb/(15.*pi))*sin(PI*rr/sigma_inlet(i,j,eg))**2.0
+c      ff= ff/rr**2.0
+c           ff = ff*intensity_inlet(i,j,eg)/sqrt(sigma_inlet(i,j,eg))
+            ff = sqrtn
 
               u_sem(i,j,1,e) = u_sem(i,j,1,e) + fx*ff
               v_sem(i,j,1,e) = v_sem(i,j,1,e) + fy*ff
