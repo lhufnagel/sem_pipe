@@ -3,13 +3,12 @@ rr_budg = importdata('180_RR_Budget.dat'); % El Khoury data
 tt_budg = importdata('180_TT_Budget.dat'); % El Khoury data
 zz_budg = importdata('180_ZZ_Budget.dat'); % El Khoury data
 
-nu = 1/5300;
 radius = .5;
-% Re_tau = 3.6121788913802544E+02;
-%u_tau = 6.1746647715901784E-02;
-Re_tau = 1.8105409983122749E+02;
-u_tau = 6.8322301823104711E-02;
-delta_tau = nu/u_tau;
+% Remember: George's Data was generated on Pipe with radius = 1
+nu = 1/5300 * (2.*radius);
+
+%u_tau = 6.1746647715901784E-02;%Re_tau = 361.21...
+u_tau = 6.8322301823104711E-02; %Re_tau = 181.05..
 
 r = ref.data(:,1);
 
@@ -28,8 +27,7 @@ r(1)=0; r(end)=radius+1e-4;
 Umean = ref.data(:,4); 
 
 ref_k = u_tau^2*.5*(ref.data(:,5).^2+ref.data(:,6).^2+ref.data(:,7).^2);
-% George's Data was generated on Pipe with radius = 1. Epsilon scales
-ref_eps = 1./(2.*radius)*(- u_tau^4/nu*.5*(rr_budg.data(:,8) + zz_budg.data(:,8) + tt_budg.data(:,8)));
+ref_eps = - u_tau^4/nu*.5*(rr_budg.data(:,8) + zz_budg.data(:,8) + tt_budg.data(:,8));
 
 if (length(ref_k) ~= length(Umean) | ...
   length(Umean) ~= length(ref_eps) | ...

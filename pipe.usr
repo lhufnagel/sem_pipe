@@ -53,23 +53,23 @@ c-----------------------------------------------------------------------
 
       real divmax
 
-      divmax = glmax(DIVV, nx2*ny2*nz2*nelv)
-      if (nid.eq.0) write(*,*) 'Divmax m2', Divmax
+C     Output maximum of divergence of velocity field
 
-C     This map divergence from pressure (Pn-2) to velocity mesh (Pn)
+C     This maps divergence from pressure (Pn-2) to velocity mesh (Pn)
       call mappr(divm1,divv,work1,work2)
-C     and averages the divergence on elemental boundaries
-c     (In contrast to outpost, when writing divergence in pressure ouput)
+C     and averages the divergence on element boundaries
+c     (In contrast to outpost(), which does not do so 
+c       when writing divergence in pressure ouput -> therefore, slight
+c       discrepancy < ~ factor 2
 
 
       divmax = glmax(divm1, nx1*ny1*nz1*nelv)
-      if (nid.eq.0) write(*,*) 'Divmax m1', Divmax
+      if (nid.eq.0) write(*,*) '||div||_max', Divmax
 
       ! output divergence
-      if (mod(ISTEP,IOSTEP).eq.0.and. istep.gt.0) then
-         call outpost(vx,vy,vz,pr,divv,'pdiv')
-         call outpost(vx,vy,vz,divv,t,'vdiv')
-      endif
+c     if (mod(ISTEP,IOSTEP).eq.0.and. istep.gt.0) then
+c        call outpost(vx,vy,vz,divv,t,'div')
+c     endif
 
 
       ! SEM

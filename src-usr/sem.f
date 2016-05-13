@@ -166,7 +166,7 @@ c     Read infile
 
         sigmal = (tke_interp**1.5)/dissip_interp
         sigmal = 0.5*sigma_factor*sigmal ! make lengthscale a (nondim) radius
-        sigmal = max(sigmal, 1e-4)  ! avoid numerical instability
+        sigmal = max(sigmal, 1e-3)  ! avoid numerical instability
 
         ! Optional: Limit eddy size far away from wall. 
         ! Suggested in Jarrins PhD, but not implemented in Code Saturne
@@ -187,6 +187,8 @@ c     Read infile
         enddo
 
       enddo
+
+      call gop(bbox_max,work,'M  ',1)
 
       Vb = (zbmax-zbmin)*bbox_max**2.*pi
 c     Vb = (xbmax-xbmin)*(ybmax-ybmin)*(zbmax-zbmin)
@@ -352,8 +354,6 @@ c         if (abs(zm1(1,1,1,e)-z_inlet).lt.1e-13) then
            v_sem(i,j,1,e) = 0
            w_sem(i,j,1,e) = umean_inlet(i,j,eg)
 
-           !WTF, TSFP paper writes 15/16, while rest of literature/code uses 16/15
-
            do ne=1,neddy
             rrx = (xm1(i,j,1,e)-ex(ne))
             rry = (ym1(i,j,1,e)-ey(ne))
@@ -370,10 +370,11 @@ c         if (abs(zm1(1,1,1,e)-z_inlet).lt.1e-13) then
            fy = fy * intensity_inlet(i,j,eg)/sigma_inlet(i,j,eg)
            fz = fz * intensity_inlet(i,j,eg)/sigma_inlet(i,j,eg)
 
-       ff=sqrt(16.*Vb/(15.*pi*sigma_inlet(i,j,eg)**3.0))
+      ff=sqrt(16.*Vb/(15.*pi*sigma_inlet(i,j,eg)**3.0))
       ff=ff * sin(PI*rr/sigma_inlet(i,j,eg))**2.0*rr/sigma_inlet(i,j,eg)
-       ff= ff/((rr/sigma_inlet(i,j,eg))**3.0)
-            ff = ff*sqrtn
+      ff= ff/((rr/sigma_inlet(i,j,eg))**3.0)
+      ff = ff*sqrtn
+
 
               u_sem(i,j,1,e) = u_sem(i,j,1,e) + fx*ff
               v_sem(i,j,1,e) = v_sem(i,j,1,e) + fy*ff
@@ -475,10 +476,6 @@ c     in polar coordinates (!)
 c-----------------------------------------------------------------------
       real function rnd_loc (lower,upper)
       implicit none
-      include 'SIZE_DEF'
-      include 'SIZE'
-      include 'PARALLEL_DEF'
-      include 'PARALLEL'
 
       real, intent(in) :: lower, upper
       real rnd
