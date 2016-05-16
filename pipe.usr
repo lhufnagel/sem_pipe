@@ -67,9 +67,9 @@ c     -> therefore, slight discrepancy < ~ factor 2
       if (nid.eq.0) write(*,*) '||div||_max', Divmax
 
       ! output divergence (in pressure field)
-c     if (mod(ISTEP,IOSTEP).eq.0.and. istep.gt.0) then
-c        call outpost(vx,vy,vz,divv,t,'div')
-c     endif
+      if (mod(ISTEP,IOSTEP).eq.0.and. istep.gt.0) then
+         call outpost(vx,vy,vz,divv,t,'div')
+      endif
 
       ! Compute lambda_2 
       ! (stored in temperature field)
@@ -214,8 +214,8 @@ c     xbmax = glmax(xc,8*nelv)
         z_inlet  = z_inlet + z_offset
       endif
 
-      zbmin = z_inlet - .5*sigma_max
-      zbmax = z_inlet + .5*sigma_max
+      zbmin = z_inlet - sigma_max
+      zbmax = z_inlet + sigma_max
 
       return
       end

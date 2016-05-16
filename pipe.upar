@@ -1,16 +1,16 @@
 &USERPAR
- bent_phi=0, ! bent section in degress
- bent_radius=5, ! bent radius (defined from pipe centerline)
- z_offset=0, ! corresponds to upstream section
+ bent_phi=90, ! bent section in degress
+ bent_radius=1, ! bent radius (defined from pipe centerline)
+ z_offset=-1, ! corresponds to upstream section, exptected to be <= 0
  /
 &AVG_LIST
- nSlices=3, ! upper limit of 50, adapt avg-all.f in case
- nElperFace=128,
- delta_time_avg=4.0420266e-2, ! =tstar create statistical records every (1s)+
- zslices=0.,1.,2.,
+ nSlices=11, ! upper limit of 50, adapt avg-all.f in case
+ nElperFace=112,
+ delta_time_avg=5e-3, ! =tstar create statistical records every (1s)+
+ zslices=-1.,0.,0.5,1.0,1.5,2.,2.5,3.,4.5,5.,7.,  ! Takes the centerline-z-value of the unbent, but shifted pipe (by z_offset above) 
  /
 &CHKPOINT
- CHKPTSTEP= 5,
+ CHKPTSTEP=50,
  IFCHKPTRST=T,
  /
 &SEM_LIST

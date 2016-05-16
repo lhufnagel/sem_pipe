@@ -93,6 +93,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
       logical ifverbose
+      logical file_exists
       integer icalld
       save    icalld
       data    icalld  /0/
@@ -138,7 +139,29 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
          nrec  = 0
          times = time
 
-         if(nid.eq.0) indts = 0
+         if(nid.eq.0) then
+         
+         indts = 0 ! output file counter
+
+         ! Do a stupid search whether there are pre-existing files
+         ! (after restarting e.g.)
+         if (nslices.gt.0) then
+           file_exists = .true.
+
+           do while (file_exists)
+
+           write(pippo,'(F7.3, A, i4.4)') zslices(1), '_',  indts+1
+           inputname1 = 'statistics/recordings/stat_z_'//
+     $    adjustl(trim(pippo))
+
+           inquire(file=inputname1,exist=file_exists); 
+
+           indts = indts + 1
+           end do
+           indts = indts - 1
+         endif
+       endif
+
       endif
       ifverbose = .FALSE.
 
@@ -804,6 +827,9 @@ c-----------------------------------------------------------------------
       include 'GEOM'
       include 'PARALLEL_DEF'
       include 'PARALLEL'
+      include 'USERPAR' 
+
+      real angle, circumf, z_unbent
 
       integer, intent(in) :: nelpFac, nstat
       real, intent(in) :: z_val, stat3d(lx1,ly1,lz1, lelv,nstat)
@@ -812,20 +838,43 @@ c-----------------------------------------------------------------------
       integer e,eg,ex,n, j, k
 
       call rzero(stat_xy,lx1*ly1*nelpFac*nstat)
+      circumf = bent_radius*bent_phi
 
       do n=1,nstat
       do e=1,nelv
         eg = lglel(e)
         ex = mod(eg-1,nelpFac)+1 ! avoid to access element 0 ..
 
-        ! (+- floating precision)
-        if (abs(z_val - zm1(1,1,1,e)) .lt. 1.e-14) then
-          do k=1,ly1
-          do j=1,lx1
-            stat_xy(j,k,ex,n) = stat3d(j,k,1,e,n)
-          enddo
-          enddo
+        z_unbent = zm1(1,1,1,e)
+
+        if (abs(bent_phi).gt.1e-10) then
+          if (zm1(1,1,1,e).gt.0) then
+            angle = atan2(zm1(1,1,1,e),xm1(1,1,1,e))
+            if (angle.le.bent_phi) then
+              z_unbent = bent_radius*angle
+            else
+              z_unbent =
+     $  zm1(1,1,1,e)+circumf*(cos(bent_phi)+sin(bent_phi)/cos(bent_phi))
+              z_unbent = z_unbent - xm1(1,1,1,e)/cos(bent_phi)
+              z_unbent = z_unbent/(cos(bent_phi) + 
+     $    sin(bent_phi)*sin(bent_phi)/cos(bent_phi))
+            endif
+c        elseif (z.le.0.and.x.lt.0) then
         endif
+        endif
+
+        ! numerical precission
+          if (abs(z_val - z_unbent).lt.1.e-14) then
+            do k=1,ly1
+              do j=1,lx1
+                stat_xy(j,k,ex,n) = stat3d(j,k,1,e,n)
+              enddo
+            enddo
+          endif
+
+
+
+
       enddo
       call gop(stat_xy(1,1,1,n),w1,'+  ', nelpFac*lx1*ly1)
       enddo
