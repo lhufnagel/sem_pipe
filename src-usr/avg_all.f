@@ -708,9 +708,9 @@ c
       real, intent(inout) ::  u  (lx1*ly1*lz1,lelt),
      $                     v  (lx1*ly1*lz1,lelt),
      $                     w  (lx1*ly1*lz1,lelt),
-     $                     ur (1) , us (1) , ut (1),
-     $                     vr (1) , vs (1) , vt (1),
-     $                     wr (1) , ws (1) , wt (1)
+     $          ur(lx1*ly1*lz1), us(lx1*ly1*lz1), ut(lx1*ly1*lz1),
+     $          vr(lx1*ly1*lz1), vs(lx1*ly1*lz1), vt(lx1*ly1*lz1),
+     $          wr(lx1*ly1*lz1), ws(lx1*ly1*lz1), wt(lx1*ly1*lz1)
 
       integer e,k,n,nxyz
 

@@ -10,11 +10,11 @@
  zslices=0.,1.,2.,
  /
 &CHKPOINT
- CHKPTSTEP= 10,
- IFCHKPTRST=F,
+ CHKPTSTEP= 5,
+ IFCHKPTRST=T,
  /
 &SEM_LIST
- neddy=5000,
+ neddy=5,
  nElInlet=128,
  sigma_max=0.2749, ! overestimating this a little won't hurt
  u0=1.0,

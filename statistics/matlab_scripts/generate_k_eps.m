@@ -3,12 +3,14 @@ rr_budg = importdata('180_RR_Budget.dat'); % El Khoury data
 tt_budg = importdata('180_TT_Budget.dat'); % El Khoury data
 zz_budg = importdata('180_ZZ_Budget.dat'); % El Khoury data
 
-radius = .5;
+radius = 0.5;
 % Remember: George's Data was generated on Pipe with radius = 1
-nu = 1/5300 * (2.*radius);
+nu = 1/5300 * (2.*radius); % Assuming U_bulk = 1
 
 %u_tau = 6.1746647715901784E-02;%Re_tau = 361.21...
 u_tau = 6.8322301823104711E-02; %Re_tau = 181.05..
+
+lstar = nu/u_tau;
 
 r = ref.data(:,1);
 
@@ -54,7 +56,7 @@ subplot(2,1,1);
 semilogx(ref_r,sigma);
 hold on;
 
-semilogx(ref_r,min(sigma,0.41*radius));
+semilogx(ref_r,min(lstar*ref_r,min(sigma,0.41*radius)));
 semilogx(ref_r,ref_eps);
 semilogx(ref_r, sqrt(2/3*ref_k));
 l = legend('\sigma = k^{3/2}/\epsilon', 'min(\sigma, 0.41*\delta)', '\epsilon', 'sqrt(2/3 k)');
@@ -71,7 +73,7 @@ hold off;
 subplot(2,1,2);
 hold on;
 plot(ref_r,sigma);
-plot(ref_r,min(sigma,0.41*radius));
+plot(ref_r,min(ref_r*lstar,min(sigma,0.41*radius)));
 plot(ref_r,ref_eps);
 plot(ref_r, sqrt(2/3*ref_k));
 

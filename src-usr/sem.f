@@ -32,10 +32,6 @@ C
 
          real                :: sigma_max 
          ! upper eddy size bound (due to k&eps)
-         real                :: bbox_max
-         ! rescale length scales by (multiplying) this factor
-         real                :: sigma_factor
-         ! maximum extent of eddies (radial direction here)
          real                :: u0 ! bulk velocity
 
 
@@ -45,6 +41,9 @@ C
          
          character*80 infile
          parameter (infile='sem_input.txt')
+
+         character*80 restart_file
+         parameter (restart_file='sem_restart.txt')
 
          ! extent, Volume of the virtual SEM domain
          real                :: ybmin,ybmax,zbmin,zbmax,xbmin,xbmax 
@@ -65,8 +64,8 @@ C
          real , allocatable  :: w_sem(:,:,:,:)
 
          ! Individual eddy energies
-         real, allocatable   :: ex(:),ey(:),ez(:),eps(:,:)
-         integer, allocatable :: eddy_pt(:)
+         real, allocatable   :: ex(:),ey(:),ez(:)
+         integer, allocatable :: eddy_pt(:),eps(:,:)
          
          integer             :: nInputdata
          real   ,allocatable :: pos(:),umean(:),tke(:),dissip(:)
@@ -150,7 +149,6 @@ c     Read infile
       allocate(umean_inlet(lx1,ly1,nElInlet))
 
       inlet_area = 0
-      bbox_max = 0
 
       do e=1,nelv
         eg = lglel(e)
@@ -164,21 +162,25 @@ c     Read infile
 
         call SEMinputData(radius,vel_interp,tke_interp,dissip_interp)
 
+        ! Implementing formula 8.2.3 of Poletto's PhD here:
         sigmal = (tke_interp**1.5)/dissip_interp
-        sigmal = 0.5*sigma_factor*sigmal ! make lengthscale a (nondim) radius
-        sigmal = max(sigmal, 1e-3)  ! avoid numerical instability
 
-        ! Optional: Limit eddy size far away from wall. 
-        ! Suggested in Jarrins PhD, but not implemented in Code Saturne
-        ! kappa is .41, 0.5 is pipe radius, therefore .41*.5
-        ! sigmal = max(.5*min(sigmal,0.41*0.5),1e-8)  
+        sigmal = min(sigmal,0.41*ybmax)
+        ! Limit eddy size far away from wall
+        ! to Prandtl's mixing length
+        ! kappa is .41, ybmax is pipe-radius here
+
+        sigmal = min(sigmal,ybmax - radius) 
+        ! make eddies no larger than pipe
+
+        sigmal = max(sigmal, .05*ybmax)  
+        ! avoid creating too small eddies (0.05 is chosen "arbitrarly")
+
+c       sigmal = 0.5*sigmal ! make lengthscale a eddy-radius
 
         sigma_inlet(i,j,emod)     = sigmal
         umean_inlet(i,j,emod)     = vel_interp
         intensity_inlet(i,j,emod) = sqrt(2./3.*tke_interp)
-
-        !Contains radius of cylinder that support of all eddies
-        bbox_max = max(bbox_max, radius + sigmal)
 
 !-----Pick face 5 to evaluate surface Jacobian
         if (eg.le.nElInlet) inlet_area = inlet_area + area(i,j,5,e)
@@ -188,9 +190,7 @@ c     Read infile
 
       enddo
 
-      call gop(bbox_max,work,'M  ',1)
-
-      Vb = (zbmax-zbmin)*bbox_max**2.*pi
+      Vb = (zbmax-zbmin)*ybmax**2.*pi
 c     Vb = (xbmax-xbmin)*(ybmax-ybmin)*(zbmax-zbmin)
 
       call gop(inlet_area,work,'+  ',1)
@@ -326,7 +326,10 @@ c     possibly replace with glvadd
       call gop(ex,wk_e,'+  ',neddy) ! inplace!
       call gop(ey,wk_e,'+  ',neddy)
       call gop(ez,wk_e,'+  ',neddy)
-      call gop(eps,wk_e,'+  ',neddy*3)
+      call igop(eps,wk_e,'+  ',neddy*3)
+
+c     Load/Save restart files
+      call SEMrestart
 
 c ---- compute velocity contribution of eddies ------
 
@@ -346,9 +349,6 @@ c         if (abs(zm1(1,1,1,e)-z_inlet).lt.1e-13) then
 
         do j=1,ly1
         do i=1,lx1
-
-        ! NOTE that the pipe/mesh is rotated in usrdat2()
-        ! hence, the inverted indexing into ym1/zm1
 
            u_sem(i,j,1,e) = 0
            v_sem(i,j,1,e) = 0
@@ -374,7 +374,6 @@ c         if (abs(zm1(1,1,1,e)-z_inlet).lt.1e-13) then
       ff=ff * sin(PI*rr/sigma_inlet(i,j,eg))**2.0*rr/sigma_inlet(i,j,eg)
       ff= ff/((rr/sigma_inlet(i,j,eg))**3.0)
       ff = ff*sqrtn
-
 
               u_sem(i,j,1,e) = u_sem(i,j,1,e) + fx*ff
               v_sem(i,j,1,e) = v_sem(i,j,1,e) + fy*ff
@@ -431,7 +430,7 @@ c     eddy_pt    - local/global mapping
 c-----------------------------------------------------------------------
 c     Generate eddy location randomly in bounding box
       subroutine gen_eddy(n)
-      use SEM, only: ex,ey,ez,eps, zbmin, zbmax, bbox_max
+      use SEM, only: ex,ey,ez,eps, zbmin, zbmax, ybmax
       implicit none
 
       real, parameter :: twoPi = 6.283185307179586476925286766
@@ -450,7 +449,7 @@ c     Generate eddy location randomly in bounding box
 
 c     Generate uniformly distributed random locations 
 c     in polar coordinates (!)
-      rho = bbox_max*sqrt(rnd_loc(0.0,1.0))  
+      rho = ybmax*sqrt(rnd_loc(0.0,1.0))  
       theta = rnd_loc(0.,twoPI) 
 
       ex(i_l) = rho * cos(theta) 
@@ -467,8 +466,8 @@ c     in polar coordinates (!)
 
       do j=1,3
         rnd = rnd_loc(0.0,1.0)
-        if (rnd.gt.0.5) eps(j,i_l)=  1.0
-        if (rnd.le.0.5) eps(j,i_l)= -1.0
+        if (rnd.gt.0.5) eps(j,i_l)=  1
+        if (rnd.le.0.5) eps(j,i_l)= -1
       enddo
 
       return
@@ -499,7 +498,7 @@ c     Set energies of nonlocal eddies to zero
         call rzero(ex,neddy) 
         call rzero(ey,neddy) 
         call rzero(ez,neddy) 
-        call rzero(eps,3*neddy) 
+        call izero(eps,3*neddy) 
         return
       endif
 
@@ -511,7 +510,7 @@ c     Set energies of nonlocal eddies to zero
          ey(i) = 0.0
          ez(i) = 0.0
          do k=1,3
-            eps(k,i)=0.0
+            eps(k,i)=0
          enddo
       enddo
       
@@ -520,7 +519,7 @@ c     Set energies of nonlocal eddies to zero
          ey(i) = 0.0
          ez(i) = 0.0
          do k=1,3
-            eps(k,i)=0.0
+            eps(k,i)=0
          enddo
       enddo
 
@@ -593,6 +592,88 @@ c     point of interest
 
       return
       end subroutine SEMinputData
+
+      subroutine SEMrestart
+      use SEM, only: restart_file, ex, ey, ez, eps, neddy
+      implicit none
+
+      include 'SIZE_DEF'
+      include 'SIZE'
+      include 'PARALLEL_DEF'
+      include 'PARALLEL'
+      include 'TSTEP_DEF'
+      include 'TSTEP' ! ISTEP,IOSTEP
+      include 'CHKPOINT'
+
+      integer j, neddy_tmp
+
+      if (istep.eq.0) then
+        if (IFCHKPTRST) then 
+
+      ! read in eddy data from files:
+      ! ex,ey,ez, eps, maybe iseed
+
+       if (nid.eq.0) then
+         open(unit=97,form='formatted',file=restart_file)
+
+         read(97,*) ex(1)  ! trash this
+
+         read(97,*) neddy_tmp
+
+         if (.NOT.neddy_tmp.eq.neddy) then
+           write(*,*)
+     $'ABORT Trying to restart from restart file with different nEddy'
+           call exitti
+         endif
+
+         read(97,*) (ex(j),j=1,neddy)  
+         read(97,*) (ey(j),j=1,neddy)  
+         read(97,*) (ez(j),j=1,neddy)  
+         read(97,*) (eps(1,j),j=1,neddy)  
+         read(97,*) (eps(2,j),j=1,neddy)  
+         read(97,*) (eps(3,j),j=1,neddy)  
+
+         close(97)
+       endif
+
+
+      call bcast(neddy,ISIZE)
+      call bcast(ex, neddy*WDSIZE)
+      call bcast(ey, neddy*WDSIZE)
+      call bcast(ez, neddy*WDSIZE)
+      call bcast(eps,3*neddy*ISIZE)
+
+      if (nid.eq.0) write(*,*) 'Read in SEM restart files'
+
+      endif
+
+      else
+        if (mod(istep,CHKPTSTEP).eq.0) then
+      ! dump restart files
+      ! Data is gathered already
+
+      ! maybe also store the seed
+       
+       if (nid.eq.0) then
+         open(unit=97,form='formatted',file=restart_file)
+          write(97,*) TIME
+          write(97,*) neddy
+          write(97,*) (ex(j),j=1,neddy)  
+          write(97,*) (ey(j),j=1,neddy)  
+          write(97,*) (ez(j),j=1,neddy)  
+          write(97,*) (eps(1,j),j=1,neddy)  
+          write(97,*) (eps(2,j),j=1,neddy)  
+          write(97,*) (eps(3,j),j=1,neddy)  
+
+          close(97)
+        endif
+        endif
+
+      endif
+
+        return
+      end subroutine SEMrestart
+
 
 
 

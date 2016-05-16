@@ -53,27 +53,33 @@ c-----------------------------------------------------------------------
 
       real divmax
 
-C     Output maximum of divergence of velocity field
+C     Output maximum of divergence
 
 C     This maps divergence from pressure (Pn-2) to velocity mesh (Pn)
       call mappr(divm1,divv,work1,work2)
 C     and averages the divergence on element boundaries
-c     (In contrast to outpost(), which does not do so 
-c       when writing divergence in pressure ouput -> therefore, slight
-c       discrepancy < ~ factor 2
-
+c     In contrast to outpost(), which does not average
+c       when writing divergence in pressure ouput 
+c     -> therefore, slight discrepancy < ~ factor 2
 
       divmax = glmax(divm1, nx1*ny1*nz1*nelv)
+
       if (nid.eq.0) write(*,*) '||div||_max', Divmax
 
-      ! output divergence
+      ! output divergence (in pressure field)
 c     if (mod(ISTEP,IOSTEP).eq.0.and. istep.gt.0) then
 c        call outpost(vx,vy,vz,divv,t,'div')
 c     endif
 
+      ! Compute lambda_2 
+      ! (stored in temperature field)
+      if (mod(ISTEP,IOSTEP).eq.0.and. istep.gt.0) then
+         if (NID.eq.0) write(6,*) ISTEP,IOSTEP,TIME,' compute lambda2'
+         call lambda2(t(1,1,1,1,1))
+      endif
+
 
       ! SEM
-
       tic=dnekclock()
       call synthetic_eddies
       rtime = rtime + (dnekclock()-tic)
@@ -81,21 +87,15 @@ c     endif
       if(istep.eq.nsteps.and.nid.eq.0) 
      $  write(6,'(A,e15.4)') 'synth. eddy method time = ', rtime
 
-      ! Compute lambda_2 (stored in temperature field)
-      if (mod(ISTEP,IOSTEP).eq.0.and. istep.gt.0) then
-         if (NID.eq.0) write(6,*) ISTEP,IOSTEP,TIME,' compute lambda2'
-         call lambda2(t(1,1,1,1,1))
-      endif
-
-      ! Statistics. Start recording at least 
-      ! after initial synthetic eddies have left pipe
-      ! (L/umean)/dt plus tolerance for smaller dt
-
-      ! 4800 steps = 2x flow-throughs 
+      ! Statistics
+      ! Start recording at least after initial synthetic eddies 
+      ! have left pipe
+      ! (L/u_bulk)/dt plus tolerance
       if(istep.ge.1) call avg_stat_all
 
-      ! Restart, NOT TESTED
-      ! call checkpoint
+      ! Restart
+      call checkpoint
+
       end
 
 c-----------------------------------------------------------------------
@@ -182,8 +182,8 @@ c     the velocity maximum seems focused towards the inner wall
 c-----------------------------------------------------------------------
 
       subroutine usrdat
-      use SEM, only: zbmin, zbmax,
-     &   sigma_max, z_inlet, sigma_factor
+      use SEM, only: zbmin, zbmax, ybmax,
+     &   sigma_max, z_inlet
       implicit none
       real, external :: glmin, glmax ! defined in math.f
 
@@ -204,28 +204,18 @@ c     Initialize SEM variables
       ! is just large enough to contain the compact support of all
       ! eddies. 
 
-c     ymin = glmin(yc,8*nelv)
-      ymax = glmax(yc,8*nelv) 
-c     xmin = glmin(xc,8*nelv)
-c     xmax = glmax(xc,8*nelv)
+c     ybmin = glmin(yc,8*nelv)
+      ybmax = glmax(yc,8*nelv) 
+c     xbmin = glmin(xc,8*nelv)
+c     xbmax = glmax(xc,8*nelv)
       z_inlet  = glmin(zc,8*nelv)
 
       if (abs(bent_phi).gt.1e-10) then
-        z_inlet  =z_inlet + z_offset
+        z_inlet  = z_inlet + z_offset
       endif
-
-c     xbmin = xmin - bbox_max  
-! for the pipe bbox_max and Vb is determined dynamically
-c     xbmax = xmax + bbox_max
-c     ybmin = ymin - bbox_max
-c     ybmax = ymax + bbox_max
 
       zbmin = z_inlet - .5*sigma_max
       zbmax = z_inlet + .5*sigma_max
-
-      ! eddies will be scaled by pipe diameter
-      sigma_factor = 1./(2.*ymax) 
-
 
       return
       end
