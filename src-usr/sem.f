@@ -32,6 +32,10 @@ C
 
          real                :: sigma_max 
          ! upper eddy size bound (due to k&eps)
+         real                :: yplus_cutoff   
+         ! yplus above which no eddies are generated, to maintain
+         ! divergence freedom. 
+         ! Typically this should be 10 delta+ from the wall.
          real                :: u0 ! bulk velocity
 
 
@@ -173,8 +177,8 @@ c     Read infile
         sigmal = min(sigmal,ybmax - radius) 
         ! make eddies no larger than pipe
 
-        sigmal = max(sigmal, .05*ybmax)  
-        ! avoid creating too small eddies (0.05 is chosen "arbitrarly")
+        sigmal = max(sigmal, .01*ybmax)  
+        ! avoid creating too small eddies (0.01 is chosen "arbitrarly")
 
 c       sigmal = 0.5*sigmal ! make lengthscale a eddy-radius
 
@@ -201,7 +205,7 @@ c-----------------------------------------------------------------------
 
 !     read parameters SEM
       subroutine SEM_param_in(fid)
-        use SEM, only: nEddy, nElInlet, 
+        use SEM, only: nEddy, yplus_cutoff, nElInlet, 
      $                 sigma_max, u0
       implicit none
 
@@ -217,11 +221,12 @@ c-----------------------------------------------------------------------
       integer ierr
 
 !     namelists
-      namelist /SEM_list/ nEddy, nElInlet, sigma_max, u0
+      namelist /SEM_list/ nEddy, nElInlet, yplus_cutoff, sigma_max, u0
 !-----------------------------------------------------------------------
 !     default values
       nEddy = 5000
       nElInlet = 256
+      yplus_cutoff = 0.4
       sigma_max = 0.25
       u0 = 1.0
 !     read the file
@@ -234,6 +239,7 @@ c-----------------------------------------------------------------------
 !     broadcast data
       call bcast(nEddy,ISIZE)
       call bcast(nElInlet,ISIZE)
+      call bcast(yplus_cutoff, WDSIZE)
       call bcast(sigma_max, WDSIZE)
       call bcast(u0, WDSIZE)
 
@@ -242,7 +248,7 @@ c-----------------------------------------------------------------------
 !***********************************************************************
 !     write parameters checkpoint
       subroutine SEM_param_out(fid)
-        use SEM, only: nEddy, nElInlet, sigma_max,  u0
+        use SEM, only: nEddy, nElInlet, sigma_max, yplus_cutoff, u0
       implicit none
 
       include 'SIZE_DEF'
@@ -255,7 +261,7 @@ c-----------------------------------------------------------------------
       integer ierr
 
 !     namelists
-      namelist /SEM_list/ nEddy, nElInlet, sigma_max, u0
+      namelist /SEM_list/ nEddy, nElInlet, yplus_cutoff, sigma_max, u0
 !-----------------------------------------------------------------------
       ierr=0
       if (NID.eq.0) then
@@ -430,7 +436,7 @@ c     eddy_pt    - local/global mapping
 c-----------------------------------------------------------------------
 c     Generate eddy location randomly in bounding box
       subroutine gen_eddy(n)
-      use SEM, only: ex,ey,ez,eps, zbmin, zbmax, ybmax
+      use SEM, only: ex,ey,ez,eps, zbmin, zbmax, yplus_cutoff
       implicit none
 
       real, parameter :: twoPi = 6.283185307179586476925286766
@@ -449,7 +455,7 @@ c     Generate eddy location randomly in bounding box
 
 c     Generate uniformly distributed random locations 
 c     in polar coordinates (!)
-      rho = ybmax*sqrt(rnd_loc(0.0,1.0))  
+      rho = yplus_cutoff*sqrt(rnd_loc(0.0,1.0))  
       theta = rnd_loc(0.,twoPI) 
 
       ex(i_l) = rho * cos(theta) 

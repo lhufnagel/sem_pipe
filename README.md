@@ -10,6 +10,7 @@ The DFSEM is implemented to generate divergence-free, nonuniform, isotropic turb
     * `neddy` the number of eddies. Should *(probably??)* suffice A_inlet/(πσ_min²). However, it was observed that too many eddies (at too small sigma_min) seem not to contribute to the generated signal properly -> underestimation of turbulent kinetic energy, because of factor sqrt(Vb/neddy) 
     * `nElInlet` the number of elements in the inlet plane
     * `sigma_max` The maximal eddy size, i.e. max(k^1.5/eps). Can be taken from above Matlab script
+    * `yplus_cutoff` The wall distance below which no synthetic eddies will be created (to satisfy divergence-free condition). Should be == 10 in plus units
     * `u0` The bulk mean velocity
     * `Vb` and `z_inlet` are being calculated in `usrdat()`. They are the volume of the convective box/cylinder and the `z` coordinate of the inlet plane respectively. Futher, the wall distance (or here pipe radius `ybmax`) is required to bound eddy sizes.
  

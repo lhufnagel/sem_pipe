@@ -11,11 +11,12 @@
  /
 &CHKPOINT
  CHKPTSTEP=50,
- IFCHKPTRST=T,
+ IFCHKPTRST=F,
  /
 &SEM_LIST
  neddy=5,
  nElInlet=128,
+ yplus_cutoff=0.47238, 
  sigma_max=0.2749, ! overestimating this a little won't hurt
  u0=1.0,
  /

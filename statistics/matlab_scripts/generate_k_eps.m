@@ -51,6 +51,8 @@ sigma=ref_k.^(3./2.)./ref_eps;
 [sigma_max,maxi] = max(sigma);
 sigma_max
 
+yplus_cutoff = radius - 10*lstar
+
 clf;
 subplot(2,1,1);
 semilogx(ref_r,sigma);
