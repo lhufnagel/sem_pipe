@@ -215,12 +215,12 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         call avg4(stat(1,14),vz,p0,alpha,beta,ntot,'pw')   ! <pw> (p, w: instantaneous)
 
         call avg5(stat(1,15),p0,duidxj,alpha,beta,ntot,'pux') ! <pdudx> (p, dudx: instantaneous) 
-        call avg5(stat(1,16),p0,duidxj,alpha,beta,ntot,'puy') ! <pdudy> (p, dudx: instantaneous) 
-        call avg5(stat(1,17),p0,duidxj,alpha,beta,ntot,'puz') ! <pdudz> (p, dudx: instantaneous)
+        call avg5(stat(1,16),p0,duidxj,alpha,beta,ntot,'puy') ! <pdudy> (p, dudy: instantaneous) 
+        call avg5(stat(1,17),p0,duidxj,alpha,beta,ntot,'puz') ! <pdudz> (p, dudz: instantaneous)
 
         call avg5(stat(1,18),p0,duidxj,alpha,beta,ntot,'pvx') ! <pdvdx> (p, dvdx: instantaneous) 
         call avg5(stat(1,19),p0,duidxj,alpha,beta,ntot,'pvy') ! <pdvdy> (p, dvdy: instantaneous)
-        call avg5(stat(1,20),p0,duidxj,alpha,beta,ntot,'pvz') ! <pdvdz> (p, dudz: instantaneous)   
+        call avg5(stat(1,20),p0,duidxj,alpha,beta,ntot,'pvz') ! <pdvdz> (p, dvdz: instantaneous)   
 
         call avg5(stat(1,21),p0,duidxj,alpha,beta,ntot,'pwx') ! <pdwdx> (p, dwdx: instantaneous) 
         call avg5(stat(1,22),p0,duidxj,alpha,beta,ntot,'pwy') ! <pdwdy> (p, dwdy: instantaneous)
@@ -299,6 +299,13 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
          call rot_1st(stat_rot(1,1),stat_rot(1,2),stat_rot(1,3),
      $        stat(1,1),stat(1,2),stat(1,3))
 
+         call rot_2nd(stat_rot(1,5),stat_rot(1,9),stat_rot(1,11),
+     $       stat_rot(1,9),stat_rot(1,6),stat_rot(1,10),
+     $       stat_rot(1,11),stat_rot(1,10),stat_rot(1,7),
+     $       stat(1,5),stat(1,9),stat(1,11),
+     $       stat(1,9),stat(1,6),stat(1,10),
+     $       stat(1,11),stat(1,10),stat(1,7))
+
          call rot_1st(stat_rot(1,12),stat_rot(1,13),stat_rot(1,14),
      $        stat(1,12),stat(1,13),stat(1,14))
   
@@ -309,13 +316,6 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      $       stat(1,18),stat(1,19),stat(1,20),
      $       stat(1,21),stat(1,22),stat(1,23))
 
-         call rot_2nd(stat_rot(1,5),stat_rot(1,9),stat_rot(1,11),
-     $       stat_rot(1,9),stat_rot(1,6),stat_rot(1,10),
-     $       stat_rot(1,11),stat_rot(1,10),stat_rot(1,7),
-     $       stat(1,5),stat(1,9),stat(1,11),
-     $       stat(1,9),stat(1,6),stat(1,10),
-     $       stat(1,11),stat(1,10),stat(1,7))
-
          call rot_2nd(stat_rot(1,42),stat_rot(1,45),stat_rot(1,46),
      $       stat_rot(1,45),stat_rot(1,43),stat_rot(1,47),
      $       stat_rot(1,46),stat_rot(1,47),stat_rot(1,44),
@@ -323,27 +323,33 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      $       stat(1,45),stat(1,43),stat(1,47),
      $       stat(1,46),stat(1,47),stat(1,44))
 
+         call rot_2nd(stat_rot(1,48),stat_rot(1,49),stat_rot(1,50),
+     $       stat_rot(1,51),stat_rot(1,52),stat_rot(1,53),
+     $       stat_rot(1,54),stat_rot(1,55),stat_rot(1,56),
+     $       stat(1,48),stat(1,49),stat(1,50),
+     $       stat(1,51),stat(1,52),stat(1,53),
+     $       stat(1,54),stat(1,55),stat(1,56))
 
-c        call rot_3rd(
-c    $       stat_rot(1,24),stat_rot(1,28),stat_rot(1,29),
-c    $       stat_rot(1,28),stat_rot(1,30),stat_rot(1,34),
-c    $       stat_rot(1,29),stat_rot(1,34),stat_rot(1,32),
-c    $       stat_rot(1,28),stat_rot(1,30),stat_rot(1,34),
-c    $       stat_rot(1,30),stat_rot(1,25),stat_rot(1,31),
-c    $       stat_rot(1,34),stat_rot(1,31),stat_rot(1,33),
-c    $       stat_rot(1,29),stat_rot(1,34),stat_rot(1,32),
-c    $       stat_rot(1,34),stat_rot(1,31),stat_rot(1,33),
-c    $       stat_rot(1,32),stat_rot(1,33),stat_rot(1,26),
-c    $       stat(1,24),stat(1,28),stat(1,29),
-c    $       stat(1,28),stat(1,30),stat(1,34),
-c    $       stat(1,29),stat(1,34),stat(1,32),
-c    $       stat(1,28),stat(1,30),stat(1,34),
-c    $       stat(1,30),stat(1,25),stat(1,31),
-c    $       stat(1,34),stat(1,31),stat(1,33),
-c    $       stat(1,29),stat(1,34),stat(1,32),
-c    $       stat(1,34),stat(1,31),stat(1,33),
-c    $       stat(1,32),stat(1,33),stat(1,26))
-c        
+         call rot_3rd(
+     $       stat_rot(1,24),stat_rot(1,28),stat_rot(1,29),
+     $       stat_rot(1,28),stat_rot(1,30),stat_rot(1,34),
+     $       stat_rot(1,29),stat_rot(1,34),stat_rot(1,32),
+     $       stat_rot(1,28),stat_rot(1,30),stat_rot(1,34),
+     $       stat_rot(1,30),stat_rot(1,25),stat_rot(1,31),
+     $       stat_rot(1,34),stat_rot(1,31),stat_rot(1,33),
+     $       stat_rot(1,29),stat_rot(1,34),stat_rot(1,32),
+     $       stat_rot(1,34),stat_rot(1,31),stat_rot(1,33),
+     $       stat_rot(1,32),stat_rot(1,33),stat_rot(1,26),
+     $       stat(1,24),stat(1,28),stat(1,29),
+     $       stat(1,28),stat(1,30),stat(1,34),
+     $       stat(1,29),stat(1,34),stat(1,32),
+     $       stat(1,28),stat(1,30),stat(1,34),
+     $       stat(1,30),stat(1,25),stat(1,31),
+     $       stat(1,34),stat(1,31),stat(1,33),
+     $       stat(1,29),stat(1,34),stat(1,32),
+     $       stat(1,34),stat(1,31),stat(1,33),
+     $       stat(1,32),stat(1,33),stat(1,26))
+         
 
 c         call rot_4th(
 c    $       stat_rot(1,35),stat_rot(1,36),stat_rot(1,37),
@@ -1043,165 +1049,203 @@ C     generating the rotation matrix
       enddo
       return
       end
-cC#################################################################################
-cC#################################################################################
-cC#################################################################################
-c
-c      subroutine rot_3rd(tn_rot333,tn_rot331,tn_rot332,
-c     $     tn_rot313,tn_rot311,tn_rot312,tn_rot323,tn_rot321,tn_rot322,
-c     $     tn_rot133,tn_rot131,tn_rot132,tn_rot113,tn_rot111,tn_rot112,
-c     $     tn_rot123,tn_rot121,tn_rot122,tn_rot233,tn_rot231,tn_rot232,
-c     $     tn_rot213,tn_rot211,tn_rot212,tn_rot223,tn_rot221,tn_rot222,
-c     $     tn_111,tn_112,tn_113,tn_121,tn_122,
-c     $     tn_123,tn_131,tn_132,tn_133,
-c     $     tn_211,tn_212,tn_213,tn_221,
-c     $     tn_222,tn_223,tn_231,tn_232,tn_233,
-c     $     tn_311,tn_312,tn_313,tn_321,tn_322,
-c     $     tn_323,tn_331,tn_332,tn_333)
-c
-c      include 'SIZE'
-c      include 'TOTAL'
-c
-c
-c      integer ii,jj,kk,i,j,k,p,q,r,nnum,mm
-c      real tn_rot111(n),tn_rot112(n),tn_rot113(n),
-c     $     tn_rot121(n),tn_rot122(n),tn_rot123(n),
-c     $     tn_rot131(n),tn_rot132(n),tn_rot133(n),
-c     $     tn_rot211(n),tn_rot212(n),tn_rot213(n),
-c     $     tn_rot221(n),tn_rot222(n),tn_rot223(n),
-c     $     tn_rot231(n),tn_rot232(n),tn_rot233(n),
-c     $     tn_rot311(n),tn_rot312(n),tn_rot313(n),
-c     $     tn_rot321(n),tn_rot322(n),tn_rot323(n),
-c     $     tn_rot331(n),tn_rot332(n),tn_rot333(n)
-c
-c      real tn_111(n),tn_112(n),tn_113(n),
-c     $     tn_121(n),tn_122(n),tn_123(n),
-c     $     tn_131(n),tn_132(n),tn_133(n),
-c     $     tn_211(n),tn_212(n),tn_213(n),
-c     $     tn_221(n),tn_222(n),tn_223(n),
-c     $     tn_231(n),tn_232(n),tn_233(n),
-c     $     tn_311(n),tn_312(n),tn_313(n),
-c     $     tn_321(n),tn_322(n),tn_323(n),
-c     $     tn_331(n),tn_332(n),tn_333(n)
-c
-c
-c      parameter (kx1=lx1,ky1=ly1,kz1=ly1,kx2=lx2,ky2=ly2,kz2=ly2)
-c
-c      real tn(3,3,3,kx1*ky1*kz1*lelt)
-c      real tn_rot(3,3,3,kx1*ky1*kz1*lelt)
-c      real rot(3,3,kx1*ky1*kz1*lelt)
-c
-c      n = nx1*ny1*nz1*nelv
-cC     initialize the rotated tensor      
-c         tn_rot = 0.0
-c
-cC     initialize the tensor suppose to be rotated with values fron STAT(*,*)      
-c      do ii=1,n
-c         tn(1,1,1,ii) = tn_111(ii)
-c         tn(1,1,2,ii) = tn_112(ii)
-c         tn(1,1,3,ii) = tn_113(ii)
-c         tn(1,2,1,ii) = tn_121(ii)
-c         tn(1,2,2,ii) = tn_122(ii)
-c         tn(1,2,3,ii) = tn_123(ii)
-c         tn(1,3,1,ii) = tn_131(ii)
-c         tn(1,3,2,ii) = tn_132(ii)
-c         tn(1,3,3,ii) = tn_133(ii)
-c         tn(2,1,1,ii) = tn_211(ii)
-c         tn(2,1,2,ii) = tn_212(ii)
-c         tn(2,1,3,ii) = tn_213(ii)
-c         tn(2,2,1,ii) = tn_221(ii)
-c         tn(2,2,2,ii) = tn_222(ii)
-c         tn(2,2,3,ii) = tn_223(ii)
-c         tn(2,3,1,ii) = tn_231(ii)
-c         tn(2,3,2,ii) = tn_232(ii)
-c         tn(2,3,3,ii) = tn_233(ii)
-c         tn(3,1,1,ii) = tn_311(ii)
-c         tn(3,1,2,ii) = tn_312(ii)
-c         tn(3,1,3,ii) = tn_313(ii)
-c         tn(3,2,1,ii) = tn_321(ii)
-c         tn(3,2,2,ii) = tn_322(ii)
-c         tn(3,2,3,ii) = tn_323(ii)
-c         tn(3,3,1,ii) = tn_331(ii)
-c         tn(3,3,2,ii) = tn_332(ii)
-c         tn(3,3,3,ii) = tn_333(ii)
-c      enddo
-c
-cC     generating the rotation matrix
-c      do kk=1,n  
-c         x=xm1(kk,1,1,1)
-c         y=ym1(kk,1,1,1)
-c         z=zm1(kk,1,1,1)
-c         prmtrc_t=atan2(x,y)
-c         c = cos(prmtrc_t)
-c         s = sin(prmtrc_t)
-ccc         prmtrc_r=sqrt(x*x+y*y)
-c         rot(1,1,kk) = s
-c         rot(1,2,kk) = c
-c         rot(1,3,kk) = 0.0
-c         rot(2,1,kk) = c
-c         rot(2,2,kk) = -s
-c         rot(2,3,kk) = 0.0
-c         rot(3,1,kk) = 0.0
-c         rot(3,2,kk) = 0.0
-c         rot(3,3,kk) = -1.0
-c      enddo
-c
-c
-c      do i=1,3
-c         do j=1,3
-c            do k =1,3
-c               do p=1,3
-c                  do q=1,3
-c                     do r=1,3
-c                        do nnum=1,n 
-c                           tn_rot(i,j,k,nnum) = tn_rot(i,j,k,nnum) + 
-c     $                          rot(p,i,nnum)*rot(q,j,nnum)*
-c     $                          rot(r,k,nnum)*tn(p,q,r,nnum)
-c                        enddo                        
-c                     enddo
-c                  enddo
-c               enddo
-c            enddo
-c         enddo
-c      enddo
-c
-c
-c      do mm = 1,n
-c         tn_rot111(mm) = tn_rot(1,1,1,mm)
-c         tn_rot112(mm) = tn_rot(1,1,2,mm)
-c         tn_rot113(mm) = tn_rot(1,1,3,mm)
-c         tn_rot121(mm) = tn_rot(1,2,1,mm)
-c         tn_rot122(mm) = tn_rot(1,2,2,mm)
-c         tn_rot123(mm) = tn_rot(1,2,3,mm)
-c         tn_rot131(mm) = tn_rot(1,3,1,mm)
-c         tn_rot132(mm) = tn_rot(1,3,2,mm)
-c         tn_rot133(mm) = tn_rot(1,3,3,mm)
-c         tn_rot211(mm) = tn_rot(2,1,1,mm)
-c         tn_rot212(mm) = tn_rot(2,1,2,mm)
-c         tn_rot213(mm) = tn_rot(2,1,3,mm)
-c         tn_rot221(mm) = tn_rot(2,2,1,mm)
-c         tn_rot222(mm) = tn_rot(2,2,2,mm)
-c         tn_rot223(mm) = tn_rot(2,2,3,mm)
-c         tn_rot231(mm) = tn_rot(2,3,1,mm)
-c         tn_rot232(mm) = tn_rot(2,3,2,mm)
-c         tn_rot233(mm) = tn_rot(2,3,3,mm)
-c         tn_rot311(mm) = tn_rot(3,1,1,mm)
-c         tn_rot312(mm) = tn_rot(3,1,2,mm)
-c         tn_rot313(mm) = tn_rot(3,1,3,mm)
-c         tn_rot321(mm) = tn_rot(3,2,1,mm)
-c         tn_rot322(mm) = tn_rot(3,2,2,mm)
-c         tn_rot323(mm) = tn_rot(3,2,3,mm)
-c         tn_rot331(mm) = tn_rot(3,3,1,mm)
-c         tn_rot332(mm) = tn_rot(3,3,2,mm)
-c         tn_rot333(mm) = tn_rot(3,3,3,mm)
-c      enddo
-c      
-c
-c      return
-c      end
-cC#################################################################################
-cC#################################################################################
-cC#################################################################################
+
+C#################################################################################
+C#################################################################################
+C#################################################################################
+
+      subroutine rot_3rd(
+     $     tn_rot111,tn_rot112,tn_rot113,
+     $     tn_rot121,tn_rot122,tn_rot123,
+     $     tn_rot131,tn_rot132,tn_rot133,
+     $     tn_rot211,tn_rot212,tn_rot213,
+     $     tn_rot221,tn_rot222,tn_rot223,
+     $     tn_rot231,tn_rot232,tn_rot233,
+     $     tn_rot311,tn_rot312,tn_rot313,
+     $     tn_rot321,tn_rot322,tn_rot323,
+     $     tn_rot331,tn_rot332,tn_rot333,
+     $     tn_111,tn_112,tn_113,
+     $     tn_121,tn_122,tn_123,
+     $     tn_131,tn_132,tn_133,
+     $     tn_211,tn_212,tn_213,
+     $     tn_221,tn_222,tn_223,
+     $     tn_231,tn_232,tn_233,
+     $     tn_311,tn_312,tn_313,
+     $     tn_321,tn_322,tn_323,
+     $     tn_331,tn_332,tn_333)
+        implicit none
+      include 'SIZE_DEF'
+      include 'SIZE'
+      include 'GEOM_DEF'
+      include 'GEOM'
+      include 'PARALLEL_DEF'
+      include 'PARALLEL'
+      include 'USERPAR' 
+
+      integer n,i,j,k,p,q,r,m
+      real tn_rot111(nx1*ny1*nz1*nelv),tn_rot112(nx1*ny1*nz1*nelv),
+     $     tn_rot113(nx1*ny1*nz1*nelv),tn_rot121(nx1*ny1*nz1*nelv),
+     $     tn_rot122(nx1*ny1*nz1*nelv),tn_rot123(nx1*ny1*nz1*nelv),
+     $     tn_rot131(nx1*ny1*nz1*nelv),tn_rot132(nx1*ny1*nz1*nelv),
+     $     tn_rot133(nx1*ny1*nz1*nelv),tn_rot211(nx1*ny1*nz1*nelv),
+     $     tn_rot212(nx1*ny1*nz1*nelv),tn_rot213(nx1*ny1*nz1*nelv),
+     $     tn_rot221(nx1*ny1*nz1*nelv),tn_rot222(nx1*ny1*nz1*nelv),
+     $     tn_rot223(nx1*ny1*nz1*nelv),tn_rot231(nx1*ny1*nz1*nelv),
+     $     tn_rot232(nx1*ny1*nz1*nelv),tn_rot233(nx1*ny1*nz1*nelv),
+     $     tn_rot311(nx1*ny1*nz1*nelv),tn_rot312(nx1*ny1*nz1*nelv),
+     $     tn_rot313(nx1*ny1*nz1*nelv),tn_rot321(nx1*ny1*nz1*nelv),
+     $     tn_rot322(nx1*ny1*nz1*nelv),tn_rot323(nx1*ny1*nz1*nelv),
+     $     tn_rot331(nx1*ny1*nz1*nelv),tn_rot332(nx1*ny1*nz1*nelv),
+     $     tn_rot333(nx1*ny1*nz1*nelv)
+
+      real tn_111(nx1*ny1*nz1*nelv),tn_112(nx1*ny1*nz1*nelv),
+     $     tn_113(nx1*ny1*nz1*nelv),tn_121(nx1*ny1*nz1*nelv),
+     $     tn_122(nx1*ny1*nz1*nelv),tn_123(nx1*ny1*nz1*nelv),
+     $     tn_131(nx1*ny1*nz1*nelv),tn_132(nx1*ny1*nz1*nelv),
+     $     tn_133(nx1*ny1*nz1*nelv),tn_211(nx1*ny1*nz1*nelv),
+     $     tn_212(nx1*ny1*nz1*nelv),tn_213(nx1*ny1*nz1*nelv),
+     $     tn_221(nx1*ny1*nz1*nelv),tn_222(nx1*ny1*nz1*nelv),
+     $     tn_223(nx1*ny1*nz1*nelv),tn_231(nx1*ny1*nz1*nelv),
+     $     tn_232(nx1*ny1*nz1*nelv),tn_233(nx1*ny1*nz1*nelv),
+     $     tn_311(nx1*ny1*nz1*nelv),tn_312(nx1*ny1*nz1*nelv),
+     $     tn_313(nx1*ny1*nz1*nelv),tn_321(nx1*ny1*nz1*nelv),
+     $     tn_322(nx1*ny1*nz1*nelv),tn_323(nx1*ny1*nz1*nelv),
+     $     tn_331(nx1*ny1*nz1*nelv),tn_332(nx1*ny1*nz1*nelv),
+     $     tn_333(nx1*ny1*nz1*nelv)
+
+
+      real tn(3,3,3,nx1*ny1*nz1*lelt)
+      real tn_rot(3,3,3,nx1*ny1*nz1*lelt)
+      real rot(3,3,nx1*ny1*nz1*lelt)
+      real c, s, angle
+
+      n = nx1*ny1*nz1*nelv
+C     initialize the rotated tensor      
+      call rzero(tn_rot ,27*nx1*ny1*nz1*lelt)
+
+C     initialize the tensor suppose to be rotated with values fron STAT(*,*)      
+      do m=1,n
+         tn(1,1,1,m) = tn_111(m)
+         tn(1,1,2,m) = tn_112(m)
+         tn(1,1,3,m) = tn_113(m)
+         tn(1,2,1,m) = tn_121(m)
+         tn(1,2,2,m) = tn_122(m)
+         tn(1,2,3,m) = tn_123(m)
+         tn(1,3,1,m) = tn_131(m)
+         tn(1,3,2,m) = tn_132(m)
+         tn(1,3,3,m) = tn_133(m)
+         tn(2,1,1,m) = tn_211(m)
+         tn(2,1,2,m) = tn_212(m)
+         tn(2,1,3,m) = tn_213(m)
+         tn(2,2,1,m) = tn_221(m)
+         tn(2,2,2,m) = tn_222(m)
+         tn(2,2,3,m) = tn_223(m)
+         tn(2,3,1,m) = tn_231(m)
+         tn(2,3,2,m) = tn_232(m)
+         tn(2,3,3,m) = tn_233(m)
+         tn(3,1,1,m) = tn_311(m)
+         tn(3,1,2,m) = tn_312(m)
+         tn(3,1,3,m) = tn_313(m)
+         tn(3,2,1,m) = tn_321(m)
+         tn(3,2,2,m) = tn_322(m)
+         tn(3,2,3,m) = tn_323(m)
+         tn(3,3,1,m) = tn_331(m)
+         tn(3,3,2,m) = tn_332(m)
+         tn(3,3,3,m) = tn_333(m)
+      enddo
+
+C     generating the rotation matrix
+      do m=1,n  
+        rot(1,1,m) = 1.0
+        rot(1,2,m) = 0.0
+        rot(1,3,m) = 0.0
+        rot(2,1,m) = 0.0
+        rot(2,2,m) = 1.0
+        rot(2,3,m) = 0.0
+        rot(3,1,m) = 0.0
+        rot(3,2,m) = 0.0
+        rot(3,3,m) = 1.0
+
+        if (abs(bent_phi).gt.1e-10) then
+          if (zm1(m,1,1,1).gt.0) then
+            angle = atan2(zm1(m,1,1,1),xm1(m,1,1,1))
+            if (angle.le.bent_phi) then
+              c = cos(-angle)
+              s = sin(-angle)
+            else
+              c = cos(-bent_phi) 
+              s = sin(-bent_phi) 
+            endif
+
+            rot(1,1,m) = c
+            rot(1,2,m) = 0.0
+            rot(1,3,m) = -s
+            rot(2,1,m) = 0.0
+            rot(2,2,m) = 1.0
+            rot(2,3,m) = 0.0
+            rot(3,1,m) = s
+            rot(3,2,m) = 0.0
+            rot(3,3,m) = c 
+        endif
+        endif
+      enddo
+
+
+      do i=1,3
+         do j=1,3
+            do k =1,3
+               do p=1,3
+                  do q=1,3
+                     do r=1,3
+                        do m=1,n 
+                           tn_rot(i,j,k,m) = tn_rot(i,j,k,m) + 
+     $                          rot(i,p,m)*rot(j,q,m)*
+     $                          rot(k,r,m)*tn(p,q,r,m)
+                        enddo                        
+                     enddo
+                  enddo
+               enddo
+            enddo
+         enddo
+      enddo
+
+
+      do m = 1,n
+         tn_rot111(m) = tn_rot(1,1,1,m)
+         tn_rot112(m) = tn_rot(1,1,2,m)
+         tn_rot113(m) = tn_rot(1,1,3,m)
+         tn_rot121(m) = tn_rot(1,2,1,m)
+         tn_rot122(m) = tn_rot(1,2,2,m)
+         tn_rot123(m) = tn_rot(1,2,3,m)
+         tn_rot131(m) = tn_rot(1,3,1,m)
+         tn_rot132(m) = tn_rot(1,3,2,m)
+         tn_rot133(m) = tn_rot(1,3,3,m)
+         tn_rot211(m) = tn_rot(2,1,1,m)
+         tn_rot212(m) = tn_rot(2,1,2,m)
+         tn_rot213(m) = tn_rot(2,1,3,m)
+         tn_rot221(m) = tn_rot(2,2,1,m)
+         tn_rot222(m) = tn_rot(2,2,2,m)
+         tn_rot223(m) = tn_rot(2,2,3,m)
+         tn_rot231(m) = tn_rot(2,3,1,m)
+         tn_rot232(m) = tn_rot(2,3,2,m)
+         tn_rot233(m) = tn_rot(2,3,3,m)
+         tn_rot311(m) = tn_rot(3,1,1,m)
+         tn_rot312(m) = tn_rot(3,1,2,m)
+         tn_rot313(m) = tn_rot(3,1,3,m)
+         tn_rot321(m) = tn_rot(3,2,1,m)
+         tn_rot322(m) = tn_rot(3,2,2,m)
+         tn_rot323(m) = tn_rot(3,2,3,m)
+         tn_rot331(m) = tn_rot(3,3,1,m)
+         tn_rot332(m) = tn_rot(3,3,2,m)
+         tn_rot333(m) = tn_rot(3,3,3,m)
+      enddo
+      
+
+      return
+      end
+C#################################################################################
+C#################################################################################
+C#################################################################################
 c      subroutine rot_4th(u_zeta4,u_r4,u_s4,
 c     $     u_zeta3u_r,u_zeta2u_r2,u_zetau_r3,
 c     $     uuuui,uuuvi,uuvvi,uvvvi,vvvvi,wwwwi,
