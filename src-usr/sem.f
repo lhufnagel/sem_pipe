@@ -1,4 +1,4 @@
-C	Synthetic eddy method module for NEK5000
+C	Divergence free Synthetic eddy method module for NEK5000
 C
 C User needs to provide 
 C  -dimensions of the eddy box (in usrdat)

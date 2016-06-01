@@ -1,8 +1,14 @@
 c-----------------------------------------------------------------------
-c     Turbulent pipe flow 
+c     Turbulent bent pipe flow 
 c     Along (positive) z-direction
 c     
-c     Turbulence at inlet is "generated" with synthetic eddy method 
+c     Turbulence at inlet is "generated" with divergence-free 
+c     synthetic eddy method (DFSEMiso)
+c     Poletto, Ruggero: Divergence free development of the synthetic eddy method 
+c     in order to improve synthetic turbulence for embedded les simulations,
+c     PhD Thesis, The University of Manchester, 2015
+c
+c     See also SEM:
 c     JARRIN, Nicolas, et al. A synthetic-eddy-method for
 c     generating inflow conditions for large-eddy simulations. International
 c     Journal of Heat and Fluid Flow, 2006, 27. Jg., Nr. 4, S. 585-593.
@@ -37,6 +43,7 @@ c-----------------------------------------------------------------------
       include 'TSTEP' ! ISTEP,IOSTEP
       include 'SOLN_DEF'      
       include 'SOLN'  ! V[XYZ],V[XYZ]P
+      include 'CHKPOINT'
 
       real, external :: dnekclock, glmax ! defined in math.f
 
@@ -53,7 +60,7 @@ c-----------------------------------------------------------------------
 
       real divmax
 
-C     Output maximum of divergence
+      ! Output maximum of divergence
 
 C     This maps divergence from pressure (Pn-2) to velocity mesh (Pn)
       call mappr(divm1,divv,work1,work2)
@@ -66,13 +73,13 @@ c     -> therefore, slight discrepancy < ~ factor 2
 
       if (nid.eq.0) write(*,*) '||div||_max', Divmax
 
-      ! output divergence (in pressure field)
+c     output divergence (in pressure field)
       if (mod(ISTEP,IOSTEP).eq.0.and. istep.gt.0) then
          call outpost(vx,vy,vz,divv,t,'div')
       endif
 
       ! Compute lambda_2 
-      ! (stored in temperature field)
+c      (stored in temperature field)
       if (mod(ISTEP,IOSTEP).eq.0.and. istep.gt.0) then
          if (NID.eq.0) write(6,*) ISTEP,IOSTEP,TIME,' compute lambda2'
          call lambda2(t(1,1,1,1,1))
@@ -88,12 +95,16 @@ c     -> therefore, slight discrepancy < ~ factor 2
      $  write(6,'(A,e15.4)') 'synth. eddy method time = ', rtime
 
       ! Statistics
-      ! Start recording at least after initial synthetic eddies 
-      ! have left pipe
-      ! (L/u_bulk)/dt plus tolerance
-      if(istep.ge.1) call avg_stat_all
+      if (IFCHKPTRST) then
+        if(istep.ge.1) call avg_stat_all
+      else
+c     Start recording at least after initial synthetic eddies 
+c     have left pipe
+c     (L/u_bulk)/dt plus tolerance
+        if(istep.ge.1) call avg_stat_all ! 100 steps
+      endif
 
-      ! Restart
+      ! Restart routines
       call checkpoint
 
       end
@@ -118,7 +129,7 @@ c     NOTE ::: This subroutine MAY NOT be called by every process
       integer, intent(in) :: ix,iy,iz,iside,ieg
       integer iel
 
-c     SEM inflow
+      ! Prescribe DFSEM inflow
 
       iel=gllel(ieg)
       ux= u_sem(ix,iy,iz,iel) 
@@ -146,7 +157,7 @@ c-----------------------------------------------------------------------
       integer ex
       real vel, tmp
 
-c     Prescribe mean inflow profile used by SEM as IC
+      ! Prescribe mean inflow profile used by DFSEM as IC
 c     NOTE: The bending of the mean velocity does not look
 c     perfectly plausible. Especially for stronger curvatures 
 c     the velocity maximum seems focused towards the inner wall
@@ -195,14 +206,14 @@ c-----------------------------------------------------------------------
 
       real ymax
 
-!     to read user module parameters
+      ! Read user module parameters
       call uprm_read
 
-c     Initialize SEM variables
+      ! Initialize DFSEM variables
       
-      ! The bounding "box" (actually a cylinder for the pipe)
-      ! is just large enough to contain the compact support of all
-      ! eddies. 
+c     The bounding "box" (actually a cylinder for the pipe)
+c     is just large enough to contain the compact support of all
+c     eddies. 
 
 c     ybmin = glmin(yc,8*nelv)
       ybmax = glmax(yc,8*nelv) 
@@ -237,7 +248,7 @@ c-----------------------------------------------------------------------
       integer i
       real angle, circumf
 
-c     Initialize SEM, once GLL points are distributed
+      ! Initialize SEM, once GLL points are distributed
       call SEMinit
 
       if (abs(bent_phi).gt.1e-10) then
@@ -247,7 +258,7 @@ c     The sweep of the bent arc is bent_phi
 c     The pipe inlet is moved at (0,r1,0) so that the center of the bend
 c     is in (0,0,0)
 
-        circumf = bent_radius*bent_phi
+      circumf = bent_radius*bent_phi
 c
       do i=1,nx1*ny1*nz1*nelv
         zm1(i,1,1,1) = zm1(i,1,1,1) + z_offset

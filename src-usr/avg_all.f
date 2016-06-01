@@ -31,6 +31,7 @@ C=======================================================================
       include 'GEOM'
       include 'INPUT_DEF'
       include 'INPUT'
+      include 'CHKPOINT'
 
       real, external :: glmin, glmax ! defined in math.f
       real, external :: surf_mean ! defined in subs1.f
@@ -62,7 +63,6 @@ C ---------------------------------------------------------------------- C
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
       real stat(lx1*ly1*lz1*lelt, nstat)
-      real stat_rot(lx1*ly1*lz1*lelt, nstat)
 
       real pm1(lx1*ly1*lz1*lelt)
       real wk1(lx1*ly1*lz1)
@@ -89,6 +89,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
 !     real stat_xy(ly1*lely*lz1*lelz, nstat)
       real , allocatable :: stat_xy(:, :), w1(:)
+      real , allocatable :: stat_rot(:,:)
 
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
@@ -134,7 +135,6 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
         domain_z = zlmax - zlmin
 
         call rzero(stat,ntot*nstat)
-        ! TODO why not stat_extra and stat_rot?
 
          nrec  = 0
          times = time
@@ -143,9 +143,9 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
          
          indts = 0 ! output file counter
 
-         ! Do a stupid search whether there are pre-existing files
-         ! (after restarting e.g.)
-         if (nslices.gt.0) then
+         ! Do a stupid search whether there are pre-existing files 
+         ! (of first slice) e.g. after restarting
+         if (nslices.gt.0.and.IFCHKPTRST) then
            file_exists = .true.
 
            do while (file_exists)
@@ -290,12 +290,79 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         allocate(stat_xy(lx1*lz1*nElperFace, nstat))
         allocate(w1(ly1*lx1*nElperFace))
+
+
+        ! Unrotate statistics
+        allocate(stat_rot(lx1*ly1*lz1*lelt, nstat))
+        call rzero(stat_rot,ntot*nstat)
+
+         call rot_1st(stat_rot(1,1),stat_rot(1,2),stat_rot(1,3),
+     $        stat(1,1),stat(1,2),stat(1,3))
+
+         call rot_1st(stat_rot(1,12),stat_rot(1,13),stat_rot(1,14),
+     $        stat(1,12),stat(1,13),stat(1,14))
+  
+         call rot_2nd(stat_rot(1,15),stat_rot(1,16),stat_rot(1,17),
+     $       stat_rot(1,18),stat_rot(1,19),stat_rot(1,20),
+     $       stat_rot(1,21),stat_rot(1,22),stat_rot(1,23),
+     $       stat(1,15),stat(1,16),stat(1,17),
+     $       stat(1,18),stat(1,19),stat(1,20),
+     $       stat(1,21),stat(1,22),stat(1,23))
+
+         call rot_2nd(stat_rot(1,5),stat_rot(1,9),stat_rot(1,11),
+     $       stat_rot(1,9),stat_rot(1,6),stat_rot(1,10),
+     $       stat_rot(1,11),stat_rot(1,10),stat_rot(1,7),
+     $       stat(1,5),stat(1,9),stat(1,11),
+     $       stat(1,9),stat(1,6),stat(1,10),
+     $       stat(1,11),stat(1,10),stat(1,7))
+
+         call rot_2nd(stat_rot(1,42),stat_rot(1,45),stat_rot(1,46),
+     $       stat_rot(1,45),stat_rot(1,43),stat_rot(1,47),
+     $       stat_rot(1,46),stat_rot(1,47),stat_rot(1,44),
+     $       stat(1,42),stat(1,45),stat(1,46),
+     $       stat(1,45),stat(1,43),stat(1,47),
+     $       stat(1,46),stat(1,47),stat(1,44))
+
+
+c        call rot_3rd(
+c    $       stat_rot(1,24),stat_rot(1,28),stat_rot(1,29),
+c    $       stat_rot(1,28),stat_rot(1,30),stat_rot(1,34),
+c    $       stat_rot(1,29),stat_rot(1,34),stat_rot(1,32),
+c    $       stat_rot(1,28),stat_rot(1,30),stat_rot(1,34),
+c    $       stat_rot(1,30),stat_rot(1,25),stat_rot(1,31),
+c    $       stat_rot(1,34),stat_rot(1,31),stat_rot(1,33),
+c    $       stat_rot(1,29),stat_rot(1,34),stat_rot(1,32),
+c    $       stat_rot(1,34),stat_rot(1,31),stat_rot(1,33),
+c    $       stat_rot(1,32),stat_rot(1,33),stat_rot(1,26),
+c    $       stat(1,24),stat(1,28),stat(1,29),
+c    $       stat(1,28),stat(1,30),stat(1,34),
+c    $       stat(1,29),stat(1,34),stat(1,32),
+c    $       stat(1,28),stat(1,30),stat(1,34),
+c    $       stat(1,30),stat(1,25),stat(1,31),
+c    $       stat(1,34),stat(1,31),stat(1,33),
+c    $       stat(1,29),stat(1,34),stat(1,32),
+c    $       stat(1,34),stat(1,31),stat(1,33),
+c    $       stat(1,32),stat(1,33),stat(1,26))
+c        
+
+c         call rot_4th(
+c    $       stat_rot(1,35),stat_rot(1,36),stat_rot(1,37),
+c    $       stat_rot(1,39),stat_rot(1,40),stat_rot(1,41),
+c    $       stat(1,35),stat(1,39),stat(1,40),
+c    $       stat(1,41),stat(1,36),stat(1,37),
+c    $       stat_extra(1,1),stat_extra(1,2),stat_extra(1,3),
+c    $       stat_extra(1,4),stat_extra(1,5),stat_extra(1,6),
+c    $       stat_extra(1,7),stat_extra(1,8),stat_extra(1,9))
+
+
+
+
         
         if(nid.eq.0) indts = indts + 1
 
         do k=1,nslices
 
-        call extract_z_slice(zslices(k), stat_xy, nElperFace, stat,
+        call extract_z_slice(zslices(k), stat_xy, nElperFace, stat_rot,
      $    nstat,w1) 
         
         if(nid.eq.0) then
@@ -367,6 +434,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         enddo
 
         deallocate(stat_xy)
+        deallocate(stat_rot)
         deallocate(w1)
 
         nrec = 0
@@ -809,6 +877,395 @@ c
       enddo 
       return
       end subroutine convert_vor
+
+C#################################################################################
+C#################################################################################
+C#################################################################################
+      subroutine rot_1st(u_zeta,u_r,u_s,ui,vi,wi)
+        implicit none
+      include 'SIZE_DEF'
+      include 'SIZE'
+      include 'GEOM_DEF'
+      include 'GEOM'
+      include 'PARALLEL_DEF'
+      include 'PARALLEL'
+      include 'USERPAR' 
+
+      integer i,e
+      real u_zeta(nx1*ny1*nz1*nelv),
+     $     u_r(nx1*ny1*nz1*nelv),
+     $     u_s(nx1*ny1*nz1*nelv),
+     $     ui(nx1*ny1*nz1*nelv),
+     $     vi(nx1*ny1*nz1*nelv),
+     $     wi(nx1*ny1*nz1*nelv)
+      real angle,c,s
+
+      do i=1,nx1*ny1*nz1*nelv  ! Convert velocity into streamwise and radial coordinate
+
+      u_zeta(i) = ui(i)
+      u_r(i)    = vi(i)
+      u_s(i)    = wi(i)
+
+        if (abs(bent_phi).gt.1e-10) then
+          if (zm1(i,1,1,1).gt.0) then
+            angle = atan2(zm1(i,1,1,1),xm1(i,1,1,1))
+            if (angle.le.bent_phi) then
+              c = cos(-angle)
+              s = sin(-angle)
+              u_zeta(i) = ui(i)*c - wi(i)*s
+              u_r(i) = vi(i)
+              u_s(i) = ui(i)*s + wi(i)*c
+            else
+              c = cos(-bent_phi)
+              s = sin(-bent_phi)
+              u_zeta(i) = ui(i)*c - wi(i)*s
+              u_r(i) = vi(i)
+              u_s(i) = ui(i)*s + wi(i)*c
+            endif
+        endif
+        endif
+      enddo
+
+      return
+      end
+C#################################################################################
+C#################################################################################
+C#################################################################################
+
+      subroutine rot_2nd(tn_rot11,tn_rot12,tn_rot13,
+     $     tn_rot21,tn_rot22,tn_rot23,
+     $     tn_rot31,tn_rot32,tn_rot33,
+     $     tn_11,tn_12,tn_13,tn_21,tn_22,tn_23,
+     $     tn_31,tn_32,tn_33)
+        implicit none
+      include 'SIZE_DEF'
+      include 'SIZE'
+      include 'GEOM_DEF'
+      include 'GEOM'
+      include 'PARALLEL_DEF'
+      include 'PARALLEL'
+      include 'USERPAR' 
+
+
+      integer n, ii,jj,kk,i,j,p,q,nnum,mm
+      real tn_rot11(nx1*ny1*nz1*nelv),tn_rot12(nx1*ny1*nz1*nelv),
+     $     tn_rot13(nx1*ny1*nz1*nelv),tn_rot21(nx1*ny1*nz1*nelv),
+     $     tn_rot22(nx1*ny1*nz1*nelv),tn_rot23(nx1*ny1*nz1*nelv),
+     $     tn_rot31(nx1*ny1*nz1*nelv),tn_rot32(nx1*ny1*nz1*nelv),
+     $     tn_rot33(nx1*ny1*nz1*nelv)
+
+      real tn_11(nx1*ny1*nz1*nelv),tn_12(nx1*ny1*nz1*nelv),
+     $     tn_13(nx1*ny1*nz1*nelv),tn_21(nx1*ny1*nz1*nelv),
+     $     tn_22(nx1*ny1*nz1*nelv),tn_23(nx1*ny1*nz1*nelv),
+     $     tn_31(nx1*ny1*nz1*nelv),tn_32(nx1*ny1*nz1*nelv),
+     $     tn_33(nx1*ny1*nz1*nelv)
+
+
+      real tn(3,3,nx1*ny1*nz1*lelt)
+      real tn_rot(3,3,nx1*ny1*nz1*lelt)
+      real rot(3,3,nx1*ny1*nz1*lelt)
+      real c, s, angle
+
+      n = nx1*ny1*nz1*nelv
+
+C     initialize the rotated tensor      
+      call rzero(tn_rot ,9*lx1*ly1*lz1*lelt)
+
+C     initialize the tensor suppose to be rotated with values fron STAT(*,*)      
+      do ii=1,n
+         tn(1,1,ii) = tn_11(ii)
+         tn(1,2,ii) = tn_12(ii)
+         tn(1,3,ii) = tn_13(ii)
+         tn(2,1,ii) = tn_21(ii)
+         tn(2,2,ii) = tn_22(ii)
+         tn(2,3,ii) = tn_23(ii)
+         tn(3,1,ii) = tn_31(ii)
+         tn(3,2,ii) = tn_32(ii)
+         tn(3,3,ii) = tn_33(ii)
+      enddo
+
+C     generating the rotation matrix
+      do kk=1,n  
+        rot(1,1,kk) = 1.0
+        rot(1,2,kk) = 0.0
+        rot(1,3,kk) = 0.0
+        rot(2,1,kk) = 0.0
+        rot(2,2,kk) = 1.0
+        rot(2,3,kk) = 0.0
+        rot(3,1,kk) = 0.0
+        rot(3,2,kk) = 0.0
+        rot(3,3,kk) = 1.0
+
+        if (abs(bent_phi).gt.1e-10) then
+          if (zm1(i,1,1,1).gt.0) then
+            angle = atan2(zm1(i,1,1,1),xm1(i,1,1,1))
+            if (angle.le.bent_phi) then
+              c = cos(-angle)
+              s = sin(-angle)
+            else
+              c = cos(-bent_phi)
+              s = sin(-bent_phi)
+            endif
+
+            rot(1,1,kk) = c
+            rot(1,2,kk) = 0.0
+            rot(1,3,kk) = s
+            rot(2,1,kk) = 0.0
+            rot(2,2,kk) = 1.0
+            rot(2,3,kk) = 0.0
+            rot(3,1,kk) = -s
+            rot(3,2,kk) = 0.0
+            rot(3,3,kk) = c
+        endif
+        endif
+      enddo
+
+      do nnum=1,n
+         do i=1,3
+            do j=1,3
+               do p=1,3
+                  do q =1,3
+                     tn_rot(i,j,nnum) = tn_rot(i,j,nnum) + 
+     $                    rot(i,p,nnum)*rot(j,q,nnum)*tn(p,q,nnum)
+                  enddo
+               enddo
+            enddo
+         enddo
+      enddo
+
+      do mm = 1,n
+         tn_rot11(mm) = tn_rot(1,1,mm)
+         tn_rot12(mm) = tn_rot(1,2,mm)
+         tn_rot13(mm) = tn_rot(1,3,mm)
+         tn_rot21(mm) = tn_rot(2,1,mm)
+         tn_rot22(mm) = tn_rot(2,2,mm)
+         tn_rot23(mm) = tn_rot(2,3,mm)
+         tn_rot31(mm) = tn_rot(3,1,mm)
+         tn_rot32(mm) = tn_rot(3,2,mm)
+         tn_rot33(mm) = tn_rot(3,3,mm)
+      enddo
+      return
+      end
+cC#################################################################################
+cC#################################################################################
+cC#################################################################################
+c
+c      subroutine rot_3rd(tn_rot333,tn_rot331,tn_rot332,
+c     $     tn_rot313,tn_rot311,tn_rot312,tn_rot323,tn_rot321,tn_rot322,
+c     $     tn_rot133,tn_rot131,tn_rot132,tn_rot113,tn_rot111,tn_rot112,
+c     $     tn_rot123,tn_rot121,tn_rot122,tn_rot233,tn_rot231,tn_rot232,
+c     $     tn_rot213,tn_rot211,tn_rot212,tn_rot223,tn_rot221,tn_rot222,
+c     $     tn_111,tn_112,tn_113,tn_121,tn_122,
+c     $     tn_123,tn_131,tn_132,tn_133,
+c     $     tn_211,tn_212,tn_213,tn_221,
+c     $     tn_222,tn_223,tn_231,tn_232,tn_233,
+c     $     tn_311,tn_312,tn_313,tn_321,tn_322,
+c     $     tn_323,tn_331,tn_332,tn_333)
+c
+c      include 'SIZE'
+c      include 'TOTAL'
+c
+c
+c      integer ii,jj,kk,i,j,k,p,q,r,nnum,mm
+c      real tn_rot111(n),tn_rot112(n),tn_rot113(n),
+c     $     tn_rot121(n),tn_rot122(n),tn_rot123(n),
+c     $     tn_rot131(n),tn_rot132(n),tn_rot133(n),
+c     $     tn_rot211(n),tn_rot212(n),tn_rot213(n),
+c     $     tn_rot221(n),tn_rot222(n),tn_rot223(n),
+c     $     tn_rot231(n),tn_rot232(n),tn_rot233(n),
+c     $     tn_rot311(n),tn_rot312(n),tn_rot313(n),
+c     $     tn_rot321(n),tn_rot322(n),tn_rot323(n),
+c     $     tn_rot331(n),tn_rot332(n),tn_rot333(n)
+c
+c      real tn_111(n),tn_112(n),tn_113(n),
+c     $     tn_121(n),tn_122(n),tn_123(n),
+c     $     tn_131(n),tn_132(n),tn_133(n),
+c     $     tn_211(n),tn_212(n),tn_213(n),
+c     $     tn_221(n),tn_222(n),tn_223(n),
+c     $     tn_231(n),tn_232(n),tn_233(n),
+c     $     tn_311(n),tn_312(n),tn_313(n),
+c     $     tn_321(n),tn_322(n),tn_323(n),
+c     $     tn_331(n),tn_332(n),tn_333(n)
+c
+c
+c      parameter (kx1=lx1,ky1=ly1,kz1=ly1,kx2=lx2,ky2=ly2,kz2=ly2)
+c
+c      real tn(3,3,3,kx1*ky1*kz1*lelt)
+c      real tn_rot(3,3,3,kx1*ky1*kz1*lelt)
+c      real rot(3,3,kx1*ky1*kz1*lelt)
+c
+c      n = nx1*ny1*nz1*nelv
+cC     initialize the rotated tensor      
+c         tn_rot = 0.0
+c
+cC     initialize the tensor suppose to be rotated with values fron STAT(*,*)      
+c      do ii=1,n
+c         tn(1,1,1,ii) = tn_111(ii)
+c         tn(1,1,2,ii) = tn_112(ii)
+c         tn(1,1,3,ii) = tn_113(ii)
+c         tn(1,2,1,ii) = tn_121(ii)
+c         tn(1,2,2,ii) = tn_122(ii)
+c         tn(1,2,3,ii) = tn_123(ii)
+c         tn(1,3,1,ii) = tn_131(ii)
+c         tn(1,3,2,ii) = tn_132(ii)
+c         tn(1,3,3,ii) = tn_133(ii)
+c         tn(2,1,1,ii) = tn_211(ii)
+c         tn(2,1,2,ii) = tn_212(ii)
+c         tn(2,1,3,ii) = tn_213(ii)
+c         tn(2,2,1,ii) = tn_221(ii)
+c         tn(2,2,2,ii) = tn_222(ii)
+c         tn(2,2,3,ii) = tn_223(ii)
+c         tn(2,3,1,ii) = tn_231(ii)
+c         tn(2,3,2,ii) = tn_232(ii)
+c         tn(2,3,3,ii) = tn_233(ii)
+c         tn(3,1,1,ii) = tn_311(ii)
+c         tn(3,1,2,ii) = tn_312(ii)
+c         tn(3,1,3,ii) = tn_313(ii)
+c         tn(3,2,1,ii) = tn_321(ii)
+c         tn(3,2,2,ii) = tn_322(ii)
+c         tn(3,2,3,ii) = tn_323(ii)
+c         tn(3,3,1,ii) = tn_331(ii)
+c         tn(3,3,2,ii) = tn_332(ii)
+c         tn(3,3,3,ii) = tn_333(ii)
+c      enddo
+c
+cC     generating the rotation matrix
+c      do kk=1,n  
+c         x=xm1(kk,1,1,1)
+c         y=ym1(kk,1,1,1)
+c         z=zm1(kk,1,1,1)
+c         prmtrc_t=atan2(x,y)
+c         c = cos(prmtrc_t)
+c         s = sin(prmtrc_t)
+ccc         prmtrc_r=sqrt(x*x+y*y)
+c         rot(1,1,kk) = s
+c         rot(1,2,kk) = c
+c         rot(1,3,kk) = 0.0
+c         rot(2,1,kk) = c
+c         rot(2,2,kk) = -s
+c         rot(2,3,kk) = 0.0
+c         rot(3,1,kk) = 0.0
+c         rot(3,2,kk) = 0.0
+c         rot(3,3,kk) = -1.0
+c      enddo
+c
+c
+c      do i=1,3
+c         do j=1,3
+c            do k =1,3
+c               do p=1,3
+c                  do q=1,3
+c                     do r=1,3
+c                        do nnum=1,n 
+c                           tn_rot(i,j,k,nnum) = tn_rot(i,j,k,nnum) + 
+c     $                          rot(p,i,nnum)*rot(q,j,nnum)*
+c     $                          rot(r,k,nnum)*tn(p,q,r,nnum)
+c                        enddo                        
+c                     enddo
+c                  enddo
+c               enddo
+c            enddo
+c         enddo
+c      enddo
+c
+c
+c      do mm = 1,n
+c         tn_rot111(mm) = tn_rot(1,1,1,mm)
+c         tn_rot112(mm) = tn_rot(1,1,2,mm)
+c         tn_rot113(mm) = tn_rot(1,1,3,mm)
+c         tn_rot121(mm) = tn_rot(1,2,1,mm)
+c         tn_rot122(mm) = tn_rot(1,2,2,mm)
+c         tn_rot123(mm) = tn_rot(1,2,3,mm)
+c         tn_rot131(mm) = tn_rot(1,3,1,mm)
+c         tn_rot132(mm) = tn_rot(1,3,2,mm)
+c         tn_rot133(mm) = tn_rot(1,3,3,mm)
+c         tn_rot211(mm) = tn_rot(2,1,1,mm)
+c         tn_rot212(mm) = tn_rot(2,1,2,mm)
+c         tn_rot213(mm) = tn_rot(2,1,3,mm)
+c         tn_rot221(mm) = tn_rot(2,2,1,mm)
+c         tn_rot222(mm) = tn_rot(2,2,2,mm)
+c         tn_rot223(mm) = tn_rot(2,2,3,mm)
+c         tn_rot231(mm) = tn_rot(2,3,1,mm)
+c         tn_rot232(mm) = tn_rot(2,3,2,mm)
+c         tn_rot233(mm) = tn_rot(2,3,3,mm)
+c         tn_rot311(mm) = tn_rot(3,1,1,mm)
+c         tn_rot312(mm) = tn_rot(3,1,2,mm)
+c         tn_rot313(mm) = tn_rot(3,1,3,mm)
+c         tn_rot321(mm) = tn_rot(3,2,1,mm)
+c         tn_rot322(mm) = tn_rot(3,2,2,mm)
+c         tn_rot323(mm) = tn_rot(3,2,3,mm)
+c         tn_rot331(mm) = tn_rot(3,3,1,mm)
+c         tn_rot332(mm) = tn_rot(3,3,2,mm)
+c         tn_rot333(mm) = tn_rot(3,3,3,mm)
+c      enddo
+c      
+c
+c      return
+c      end
+cC#################################################################################
+cC#################################################################################
+cC#################################################################################
+c      subroutine rot_4th(u_zeta4,u_r4,u_s4,
+c     $     u_zeta3u_r,u_zeta2u_r2,u_zetau_r3,
+c     $     uuuui,uuuvi,uuvvi,uvvvi,vvvvi,wwwwi,
+c     $     uuuwi,uuwwi,uwwwi,vvvwi,vvwwi,vwwwi,
+c     $     uuvwi,uvvwi,uvwwi)
+c
+c      include 'SIZE'
+c      include 'TOTAL'
+c
+c      integer i
+c      real u_zeta4(n),u_r4(n),u_s4(n),
+c     $     u_zeta3u_r(n),u_zeta2u_r2(n),u_zetau_r3(n),
+c     $     uuuui(n),uuuvi(n),uuvvi(n),uvvvi(n),vvvvi(n),wwwwi(n),
+c     $     uuuwi(n),uuwwi(n),uwwwi(n),vvvwi(n),vvwwi(n),vwwwi(n),
+c     $     uuvwi(n),uvvwi(n),uvwwi(n)
+c
+c      n = nx1*ny1*nz1*nelv
+c
+c      do i=1,n  ! Convert velocity into streamwise and radial coordinate
+c         x=xm1(i,1,1,1)
+c         y=ym1(i,1,1,1)
+c         z=zm1(i,1,1,1)
+c         prmtrc_t=atan2(x,y)
+c         c = cos(prmtrc_t)
+c         s = sin(prmtrc_t)
+cc         prmtrc_r=sqrt(x*x+y*y)
+c
+c         uuuu = uuuui(i)
+c         uuuv = uuuvi(i)
+c         uuvv = uuvvi(i)
+c         uvvv = uvvvi(i)
+c         vvvv = vvvvi(i)
+c         wwww = wwwwi(i)
+c         uuuw = uuuwi(i)
+c         uuww = uuwwi(i)
+c         uwww = uwwwi(i)
+c         vvvw = vvvwi(i)
+c         vvww = vvwwi(i)
+c         vwww = vwwwi(i)
+c         uuvw = uuvwi(i)
+c         uvvw = uvvwi(i)
+c         uvww = uvwwi(i)
+c
+c
+c         u_zeta4(i)     = wwww
+c         u_r4(i)        = uuuu*(s**4) + 4*uuuv*(s**3)*c + 
+c     $        6*uuvv*(s**2)*(c**2) + 4*uvvv*s*(c**3) + vvvv*(c**4)
+c         u_s4(i)        = uuuu*(c**4) - 4*uuuv*(c**3)*s + 
+c     $        6*uuvv*(c**2)*(s**2) - 4*uvvv*c*(s**3) + vvvv*(s**4)
+c         u_zeta3u_r(i)  = -uwww*s - vwww*c
+c         u_zeta2u_r2(i) = uuww*(s**2) + 2*uvww*s*c + vvww*(c**2)
+c         u_zetau_r3(i)  = -uuuw*(s**3) - 3*uuvw*(s**2)*c - 
+c     $        3*uvvw*s*(c**2) - vvvw*(c**3)
+c
+c      enddo
+c
+c      return
+c      end
+cC#################################################################################
+cC#################################################################################
+cC#################################################################################
       
 C-----------------------------------------------------------------------
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C      
@@ -829,7 +1286,7 @@ c-----------------------------------------------------------------------
       include 'PARALLEL'
       include 'USERPAR' 
 
-      real angle, circumf, z_unbent
+      real angle, circumf, z_unbent, c, s
 
       integer, intent(in) :: nelpFac, nstat
       real, intent(in) :: z_val, stat3d(lx1,ly1,lz1, lelv,nstat)
@@ -839,6 +1296,8 @@ c-----------------------------------------------------------------------
 
       call rzero(stat_xy,lx1*ly1*nelpFac*nstat)
       circumf = bent_radius*bent_phi
+      c = cos(bent_phi)
+      s = sin(bent_phi)
 
       do n=1,nstat
       do e=1,nelv
@@ -853,18 +1312,14 @@ c-----------------------------------------------------------------------
             if (angle.le.bent_phi) then
               z_unbent = bent_radius*angle
             else
-              z_unbent =
-     $  zm1(1,1,1,e)+circumf*(cos(bent_phi)+sin(bent_phi)/cos(bent_phi))
-              z_unbent = z_unbent - xm1(1,1,1,e)/cos(bent_phi)
-              z_unbent = z_unbent/(cos(bent_phi) + 
-     $    sin(bent_phi)*sin(bent_phi)/cos(bent_phi))
+              z_unbent = c*zm1(1,1,1,e)/s**2.-xm1(1,1,1,e)/s
+              z_unbent = z_unbent/(1.+c**2./s**2.)+circumf
             endif
-c        elseif (z.le.0.and.x.lt.0) then
         endif
         endif
 
         ! numerical precission
-          if (abs(z_val - z_unbent).lt.1.e-14) then
+          if (abs(z_val - z_unbent).lt.1e-10) then
             do k=1,ly1
               do j=1,lx1
                 stat_xy(j,k,ex,n) = stat3d(j,k,1,e,n)
