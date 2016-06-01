@@ -912,16 +912,13 @@ C###############################################################################
             if (angle.le.bent_phi) then
               c = cos(-angle)
               s = sin(-angle)
-              u_zeta(i) = ui(i)*c - wi(i)*s
-              u_r(i) = vi(i)
-              u_s(i) = ui(i)*s + wi(i)*c
             else
               c = cos(-bent_phi)
               s = sin(-bent_phi)
-              u_zeta(i) = ui(i)*c - wi(i)*s
-              u_r(i) = vi(i)
-              u_s(i) = ui(i)*s + wi(i)*c
             endif
+            u_zeta(i) = ui(i)*c - wi(i)*s
+            u_r(i) = vi(i)
+            u_s(i) = ui(i)*s + wi(i)*c
         endif
         endif
       enddo
@@ -947,7 +944,7 @@ C###############################################################################
       include 'USERPAR' 
 
 
-      integer n, ii,jj,kk,i,j,p,q,nnum,mm
+      integer n, i,j,p,q,m
       real tn_rot11(nx1*ny1*nz1*nelv),tn_rot12(nx1*ny1*nz1*nelv),
      $     tn_rot13(nx1*ny1*nz1*nelv),tn_rot21(nx1*ny1*nz1*nelv),
      $     tn_rot22(nx1*ny1*nz1*nelv),tn_rot23(nx1*ny1*nz1*nelv),
@@ -972,77 +969,77 @@ C     initialize the rotated tensor
       call rzero(tn_rot ,9*lx1*ly1*lz1*lelt)
 
 C     initialize the tensor suppose to be rotated with values fron STAT(*,*)      
-      do ii=1,n
-         tn(1,1,ii) = tn_11(ii)
-         tn(1,2,ii) = tn_12(ii)
-         tn(1,3,ii) = tn_13(ii)
-         tn(2,1,ii) = tn_21(ii)
-         tn(2,2,ii) = tn_22(ii)
-         tn(2,3,ii) = tn_23(ii)
-         tn(3,1,ii) = tn_31(ii)
-         tn(3,2,ii) = tn_32(ii)
-         tn(3,3,ii) = tn_33(ii)
+      do m=1,n
+         tn(1,1,m) = tn_11(m)
+         tn(1,2,m) = tn_12(m)
+         tn(1,3,m) = tn_13(m)
+         tn(2,1,m) = tn_21(m)
+         tn(2,2,m) = tn_22(m)
+         tn(2,3,m) = tn_23(m)
+         tn(3,1,m) = tn_31(m)
+         tn(3,2,m) = tn_32(m)
+         tn(3,3,m) = tn_33(m)
       enddo
 
 C     generating the rotation matrix
-      do kk=1,n  
-        rot(1,1,kk) = 1.0
-        rot(1,2,kk) = 0.0
-        rot(1,3,kk) = 0.0
-        rot(2,1,kk) = 0.0
-        rot(2,2,kk) = 1.0
-        rot(2,3,kk) = 0.0
-        rot(3,1,kk) = 0.0
-        rot(3,2,kk) = 0.0
-        rot(3,3,kk) = 1.0
+      do m=1,n  
+        rot(1,1,m) = 1.0
+        rot(1,2,m) = 0.0
+        rot(1,3,m) = 0.0
+        rot(2,1,m) = 0.0
+        rot(2,2,m) = 1.0
+        rot(2,3,m) = 0.0
+        rot(3,1,m) = 0.0
+        rot(3,2,m) = 0.0
+        rot(3,3,m) = 1.0
 
         if (abs(bent_phi).gt.1e-10) then
-          if (zm1(i,1,1,1).gt.0) then
-            angle = atan2(zm1(i,1,1,1),xm1(i,1,1,1))
+          if (zm1(m,1,1,1).gt.0) then
+            angle = atan2(zm1(m,1,1,1),xm1(m,1,1,1))
             if (angle.le.bent_phi) then
               c = cos(-angle)
               s = sin(-angle)
             else
-              c = cos(-bent_phi)
-              s = sin(-bent_phi)
+              c = cos(-bent_phi) 
+              s = sin(-bent_phi) 
             endif
 
-            rot(1,1,kk) = c
-            rot(1,2,kk) = 0.0
-            rot(1,3,kk) = s
-            rot(2,1,kk) = 0.0
-            rot(2,2,kk) = 1.0
-            rot(2,3,kk) = 0.0
-            rot(3,1,kk) = -s
-            rot(3,2,kk) = 0.0
-            rot(3,3,kk) = c
+            rot(1,1,m) = c
+            rot(1,2,m) = 0.0
+            rot(1,3,m) = -s
+            rot(2,1,m) = 0.0
+            rot(2,2,m) = 1.0
+            rot(2,3,m) = 0.0
+            rot(3,1,m) = s
+            rot(3,2,m) = 0.0
+            rot(3,3,m) = c 
         endif
         endif
       enddo
 
-      do nnum=1,n
+      do m=1,n
          do i=1,3
             do j=1,3
                do p=1,3
                   do q =1,3
-                     tn_rot(i,j,nnum) = tn_rot(i,j,nnum) + 
-     $                    rot(i,p,nnum)*rot(j,q,nnum)*tn(p,q,nnum)
+                     tn_rot(i,j,m) = tn_rot(i,j,m) + 
+     $                    rot(i,p,m)*tn(p,q,m)*rot(j,q,m)
                   enddo
                enddo
             enddo
          enddo
       enddo
 
-      do mm = 1,n
-         tn_rot11(mm) = tn_rot(1,1,mm)
-         tn_rot12(mm) = tn_rot(1,2,mm)
-         tn_rot13(mm) = tn_rot(1,3,mm)
-         tn_rot21(mm) = tn_rot(2,1,mm)
-         tn_rot22(mm) = tn_rot(2,2,mm)
-         tn_rot23(mm) = tn_rot(2,3,mm)
-         tn_rot31(mm) = tn_rot(3,1,mm)
-         tn_rot32(mm) = tn_rot(3,2,mm)
-         tn_rot33(mm) = tn_rot(3,3,mm)
+      do m = 1,n
+         tn_rot11(m) = tn_rot(1,1,m)
+         tn_rot12(m) = tn_rot(1,2,m)
+         tn_rot13(m) = tn_rot(1,3,m)
+         tn_rot21(m) = tn_rot(2,1,m)
+         tn_rot22(m) = tn_rot(2,2,m)
+         tn_rot23(m) = tn_rot(2,3,m)
+         tn_rot31(m) = tn_rot(3,1,m)
+         tn_rot32(m) = tn_rot(3,2,m)
+         tn_rot33(m) = tn_rot(3,3,m)
       enddo
       return
       end
