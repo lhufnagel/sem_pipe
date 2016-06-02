@@ -69,7 +69,7 @@ C
 
          ! Individual eddy energies
          real, allocatable   :: ex(:),ey(:),ez(:)
-         integer, allocatable :: eddy_pt(:),eps(:,:)
+         integer, allocatable :: eps(:,:)
          
          integer             :: nInputdata
          real   ,allocatable :: pos(:),umean(:),tke(:),dissip(:)
@@ -146,7 +146,6 @@ c     Read infile
       allocate(ey(neddy))
       allocate(ez(neddy))
       allocate(eps(3,neddy))
-      allocate(eddy_pt(neddy))
 
       allocate(sigma_inlet(lx1,ly1,nElInlet))
       allocate(intensity_inlet(lx1,ly1,nElInlet))
@@ -297,42 +296,33 @@ C=======================================================================
       real  work
       real wk_e(neddy*3)
       integer clock, e,eg, 
-     &      i,j,i_l,ne,nv,iseed
+     &      i,j,ne,nv,iseed
       !     functions
       real dnekclock, sqrtn
   
 c --- generate initial eddy distribution ----
     
       if (istep.eq.0) then
-          clock = int(dnekclock())
-
-c     !BEWARE! This seems dangerously non random,
-c     when there are less eddies than processors
-c     (Judged by looking at eddy positions..)
-          iseed=(nid+1)*11 + clock + 1
+          iseed = int(dnekclock())
           call  ZBQLINI(iseed)
 
-          call distribute_eddies(neddy_ll)
-
-c     Generate local eddies with locations ex,ey,ez
-          do i=1,neddy_ll
-              i_l = eddy_pt(i)
-              call gen_eddy(i_l)
-          enddo   
-c     zeroing eddies off this proc
-          call zero_nonlocal_eddies(neddy_ll)
+c     Generate eddies with locations ex,ey,ez
+          if (nid.eq.0) then
+            do i=1,neddy
+              call gen_eddy(i)
+            enddo   
+          endif
       else 
-          call advect_recycle_eddies(neddy_ll)
-          call zero_nonlocal_eddies(neddy_ll)
+          if (nid.eq.0) then
+            call advect_recycle_eddies(neddy)
+          endif
       endif
 
-c     Gather eddies on each processor
-c     possibly replace with glvadd
-
-      call gop(ex,wk_e,'+  ',neddy) ! inplace!
-      call gop(ey,wk_e,'+  ',neddy)
-      call gop(ez,wk_e,'+  ',neddy)
-      call igop(eps,wk_e,'+  ',neddy*3)
+c     Broadcast eddies to each processor
+      call bcast(ex,neddy*WDSIZE)
+      call bcast(ey,neddy*WDSIZE)
+      call bcast(ez,neddy*WDSIZE)
+      call bcast(eps,neddy*3*ISIZE)
 
 c     Load/Save restart files
       call SEMrestart
@@ -402,39 +392,7 @@ c         if (abs(zm1(1,1,1,e)-z_inlet).lt.1e-13) then
       return
       end subroutine synthetic_eddies
 c-----------------------------------------------------------------------
-c     distribute eddies across all processors
-c     nl    - local # eddies
-c     eddy_pt    - local/global mapping
-      subroutine distribute_eddies(nl)
-        use SEM, only: neddy, eddy_pt
-      implicit none
-      include 'SIZE_DEF'
-      include 'SIZE'
-      include 'PARALLEL_DEF'
-      include 'PARALLEL'
-
-      integer, intent(out) :: nl
-      integer i, nbatch0,nbatch1,ibnd,istart
-
-      nbatch0 = neddy/np + 1
-      nbatch1 = neddy/np
-      ibnd = neddy - nbatch1*np - 1
-      if(nid.le.ibnd)then
-        nl     = nbatch0
-        istart = nbatch0*nid + 1
-      else
-        nl     = nbatch1
-        istart = nbatch0*(ibnd+1) + nbatch1*(nid-(ibnd+1))+ 1
-      endif
-
-      do i=1,nl
-         eddy_pt(i) = istart + (i-1)
-      enddo
-
-      return
-      end subroutine distribute_eddies
-c-----------------------------------------------------------------------
-c     Generate eddy location randomly in bounding box
+c     Generate eddy location randomly in bounding box (only on rank=0)
       subroutine gen_eddy(n)
       use SEM, only: ex,ey,ez,eps, zbmin, zbmax, yplus_cutoff
       implicit none
@@ -449,31 +407,30 @@ c     Generate eddy location randomly in bounding box
 
       integer, intent(in) :: n
       real rnd, rho, theta
-      integer j,i_l
-
-      i_l = n
+      integer j
 
 c     Generate uniformly distributed random locations 
 c     in polar coordinates (!)
+
       rho = yplus_cutoff*sqrt(rnd_loc(0.0,1.0))  
       theta = rnd_loc(0.,twoPI) 
 
-      ex(i_l) = rho * cos(theta) 
+      ex(n) = rho * cos(theta) 
       if (abs(bent_phi).gt.1e-10) then
-        ex(i_l) = ex(i_l) + bent_radius
+        ex(n) = ex(n) + bent_radius
       endif
 
-      ey(i_l) = rho * sin(theta)
+      ey(n) = rho * sin(theta)
       if(istep.eq.0)then
-          ez(i_l) = rnd_loc(zbmin,zbmax)
+          ez(n) = rnd_loc(zbmin,zbmax)
       else
-          ez(i_l) = zbmin
+          ez(n) = zbmin
       endif       
 
       do j=1,3
         rnd = rnd_loc(0.0,1.0)
-        if (rnd.gt.0.5) eps(j,i_l)=  1
-        if (rnd.le.0.5) eps(j,i_l)= -1
+        if (rnd.gt.0.5) eps(j,n)=  1
+        if (rnd.le.0.5) eps(j,n)= -1
       enddo
 
       return
@@ -490,52 +447,11 @@ c-----------------------------------------------------------------------
       rnd_loc = lower + rnd*(upper-lower)
       return
       end function rnd_loc
-c-----------------------------------------------------------------------
-c     Set energies of nonlocal eddies to zero
-      subroutine zero_nonlocal_eddies(neddy_ll)
-      use SEM, only: ex,ey,ez,eps, neddy, eddy_pt
-      implicit none
-
-      integer, intent(in) :: neddy_ll
-      integer i,k, i1, i2
-
-      ! when there are fewer eddies than processors
-      if (neddy_ll.eq.0) then 
-        call rzero(ex,neddy) 
-        call rzero(ey,neddy) 
-        call rzero(ez,neddy) 
-        call izero(eps,3*neddy) 
-        return
-      endif
-
-      i1 = eddy_pt(1)-1
-      i2 = eddy_pt(neddy_ll)+1
-
-      do i=1,i1
-         ex(i) = 0.0
-         ey(i) = 0.0
-         ez(i) = 0.0
-         do k=1,3
-            eps(k,i)=0
-         enddo
-      enddo
-      
-      do i=i2,neddy
-         ex(i) = 0.0
-         ey(i) = 0.0
-         ez(i) = 0.0
-         do k=1,3
-            eps(k,i)=0
-         enddo
-      enddo
-
-      return
-      end subroutine zero_nonlocal_eddies
 
 c-----------------------------------------------------------------------
 c     Convect eddies and recycle by regenerating the location
       subroutine advect_recycle_eddies(n)
-      use SEM, only: zbmax,u0, neddy, ex, ey, ez, eps, eddy_pt
+      use SEM, only: zbmax,u0, neddy, ex, ey, ez, eps
       implicit none
       include 'SIZE_DEF' ! DT
       include 'SIZE' ! DT
@@ -544,16 +460,15 @@ c     Convect eddies and recycle by regenerating the location
 
       integer, intent(in) :: n
      
-      integer i,i_l
+      integer i
 
       do i=1,n
-        i_l = eddy_pt(i)
-        ez(i_l) = ez(i_l) + u0*DT
+        ez(i) = ez(i) + u0*DT
 
                             
 c     ---- recycle exiting eddies ----
-        if (ez(i_l).gt.(zbmax))then
-          call gen_eddy(i_l)
+        if (ez(i).gt.(zbmax))then
+          call gen_eddy(i)
         endif
       enddo
 
