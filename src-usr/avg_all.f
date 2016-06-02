@@ -74,7 +74,8 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
       real wr(lx1*ly1*lz1), ws(lx1*ly1*lz1), wt(lx1*ly1*lz1)
       real vort(lx1*ly1*lz1*lelv,3),
      $      w3(lx1*ly1*lz1*lelv),w4(lx1*ly1*lz1*lelv)
-      real omega_r(lx1*ly1*lz1*lelt), omega_t(lx1*ly1*lz1*lelt)
+      real omega_r(lx1*ly1*lz1*lelt), omega_t(lx1*ly1*lz1*lelt),
+     $     omega_z(lx1*ly1*lz1*lelt)
 
       real alpha, beta, dtime
       real xlmin, xlmax, domain_x
@@ -188,7 +189,7 @@ c      call mappr(pm1,pr,wk1,wk2) ! map pressure to mesh 1 (vel. mesh)
 
       call comp_derivat(duidxj,vx,vy,vz,ur,us,ut,vr,vs,vt,wr,ws,wt)
       call comp_vort3(vort,w3,w4,vx,vy,vz)
-      call convert_vor(omega_r,omega_t,vort(1,1),vort(1,2),ntot)
+      call convert_vor(omega_r,omega_t,omega_z,vort,lx1*ly1*lz1*lelv)
 
       if (atime.ne.0.) then ! closed in l. 1606
         nrec  = nrec + 1
@@ -269,13 +270,13 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         call avg5(stat(1,55),p0,duidxj,alpha,beta,ntot,'uuu') ! <dw/dy>
         call avg5(stat(1,56),p0,duidxj,alpha,beta,ntot,'vvv') ! <dw/dz>
 
-        call avg1(stat(1,57),omega_r,alpha,beta,ntot,'velx',ifverbose)  ! <omr>
-        call avg1(stat(1,58),omega_t,alpha,beta,ntot,'vely',ifverbose)  ! <omt>
-        call avg1(stat(1,59),vort(1,3),alpha,beta,ntot,'velz',ifverbose)! <omz>
+        call avg1(stat(1,57),omega_r,alpha,beta,ntot,'omr',ifverbose)  ! <omr>
+        call avg1(stat(1,58),omega_t,alpha,beta,ntot,'omt',ifverbose)  ! <omt>
+        call avg1(stat(1,59),omega_z,alpha,beta,ntot,'omz',ifverbose)! <omz>
 
-        call avg2(stat(1,60),omega_r,alpha,beta,ntot,'urms',ifverbose)  ! <omr*omr> 
-        call avg2(stat(1,61),omega_t,alpha,beta,ntot,'vrms',ifverbose)  ! <omt*omt> 
-        call avg2(stat(1,62),vort(1,3),alpha,beta,ntot,'wrms',ifverbose)!<omz*omz> 
+        call avg2(stat(1,60),omega_r,alpha,beta,ntot,'omr2',ifverbose)  ! <omr*omr> 
+        call avg2(stat(1,61),omega_t,alpha,beta,ntot,'omt2',ifverbose)  ! <omt*omt> 
+        call avg2(stat(1,62),omega_z,alpha,beta,ntot,'omz2',ifverbose)!<omz*omz> 
 
 
       endif
@@ -316,20 +317,6 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      $       stat(1,18),stat(1,19),stat(1,20),
      $       stat(1,21),stat(1,22),stat(1,23))
 
-         call rot_2nd(stat_rot(1,42),stat_rot(1,45),stat_rot(1,46),
-     $       stat_rot(1,45),stat_rot(1,43),stat_rot(1,47),
-     $       stat_rot(1,46),stat_rot(1,47),stat_rot(1,44),
-     $       stat(1,42),stat(1,45),stat(1,46),
-     $       stat(1,45),stat(1,43),stat(1,47),
-     $       stat(1,46),stat(1,47),stat(1,44))
-
-         call rot_2nd(stat_rot(1,48),stat_rot(1,49),stat_rot(1,50),
-     $       stat_rot(1,51),stat_rot(1,52),stat_rot(1,53),
-     $       stat_rot(1,54),stat_rot(1,55),stat_rot(1,56),
-     $       stat(1,48),stat(1,49),stat(1,50),
-     $       stat(1,51),stat(1,52),stat(1,53),
-     $       stat(1,54),stat(1,55),stat(1,56))
-
          call rot_3rd(
      $       stat_rot(1,24),stat_rot(1,28),stat_rot(1,29),
      $       stat_rot(1,28),stat_rot(1,30),stat_rot(1,34),
@@ -349,7 +336,30 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      $       stat(1,29),stat(1,34),stat(1,32),
      $       stat(1,34),stat(1,31),stat(1,33),
      $       stat(1,32),stat(1,33),stat(1,26))
+
+         call rot_2nd(stat_rot(1,42),stat_rot(1,45),stat_rot(1,46),
+     $       stat_rot(1,45),stat_rot(1,43),stat_rot(1,47),
+     $       stat_rot(1,46),stat_rot(1,47),stat_rot(1,44),
+     $       stat(1,42),stat(1,45),stat(1,46),
+     $       stat(1,45),stat(1,43),stat(1,47),
+     $       stat(1,46),stat(1,47),stat(1,44))
+
+         call rot_2nd(stat_rot(1,48),stat_rot(1,49),stat_rot(1,50),
+     $       stat_rot(1,51),stat_rot(1,52),stat_rot(1,53),
+     $       stat_rot(1,54),stat_rot(1,55),stat_rot(1,56),
+     $       stat(1,48),stat(1,49),stat(1,50),
+     $       stat(1,51),stat(1,52),stat(1,53),
+     $       stat(1,54),stat(1,55),stat(1,56))
+
+         ! vorticity is rotated above
+         call copy(stat_rot(1,57),stat(1,57),ntot);
+         call copy(stat_rot(1,58),stat(1,58),ntot);
+         call copy(stat_rot(1,59),stat(1,59),ntot);
+         call copy(stat_rot(1,60),stat(1,60),ntot);
+         call copy(stat_rot(1,61),stat(1,61),ntot);
+         call copy(stat_rot(1,62),stat(1,62),ntot);
          
+c    4th order stats are Left out for the moment
 
 c         call rot_4th(
 c    $       stat_rot(1,35),stat_rot(1,36),stat_rot(1,37),
@@ -359,9 +369,6 @@ c    $       stat(1,41),stat(1,36),stat(1,37),
 c    $       stat_extra(1,1),stat_extra(1,2),stat_extra(1,3),
 c    $       stat_extra(1,4),stat_extra(1,5),stat_extra(1,6),
 c    $       stat_extra(1,7),stat_extra(1,8),stat_extra(1,9))
-
-
-
 
         
         if(nid.eq.0) indts = indts + 1
@@ -857,29 +864,63 @@ c
       ! Convert vorticity into cylindrical coordinate
       ! adapted from convert_vel I could only find in Azads scratch..
 
-      subroutine convert_vor(or,ot,oxi,oyi,n)
+      subroutine convert_vor(or,ot,oz,omega_cart,n)
         implicit none
 
       include 'SIZE_DEF'
       include 'SIZE'
       include 'GEOM_DEF' ! xm1
       include 'GEOM'
+      include 'USERPAR' 
 
-      real, intent(out) :: or(n),ot(n)
-      real, intent(in) :: oxi(n),oyi(n)
+      real, intent(out) :: or(n),ot(n),oz(n)
+      real, intent(in) :: omega_cart(n,3)
       integer, intent(in) :: n
       integer i
-      real  x, y, c, s, prmtrc_t! , prmtrc_r
+      real  x_unbent, c, s, z_unbent, angle, circumf
 
-      do i=1,n  
-         x=xm1(i,1,1,1)
-         y=ym1(i,1,1,1)
-         prmtrc_t=atan2(y,x)
-         c = cos(prmtrc_t)
-         s = sin(prmtrc_t) 
-!        prmtrc_r=sqrt(x*x+y*y)   ! TODO check if neccessary
-         or(i) =  c*oxi(i) + s*oyi(i) 
-         ot(i) = -s*oxi(i) + c*oyi(i) 
+
+      circumf = bent_radius*bent_phi
+
+      do i=1,nx1*ny1*nz1*nelv
+        if (abs(bent_phi).gt.1e-10.and.zm1(i,1,1,1).gt.0) then
+          angle = atan2(zm1(i,1,1,1),xm1(i,1,1,1))
+          if (angle.le.bent_phi) then
+            c = cos(-angle)
+            s = sin(-angle)
+            z_unbent = bent_radius*angle
+            x_unbent=xm1(i,1,1,1)/(cos(angle))-bent_radius
+          else
+            c = cos(bent_phi)
+            s = sin(bent_phi)
+            z_unbent = c*zm1(i,1,1,1)/s**2.-xm1(i,1,1,1)/s
+            z_unbent = z_unbent/(1.+c**2./s**2.)+circumf
+            x_unbent=(xm1(i,1,1,1)+(z_unbent - circumf)*s)/c-bent_radius
+            c = cos(-bent_phi)
+            s = sin(-bent_phi)
+          endif
+
+          ! TODO evtl r und t hier nach vertauschen
+          or(i) = omega_cart(i,1)*c - omega_cart(i,3)*s
+          ot(i) = omega_cart(i,2)
+          oz(i) = omega_cart(i,1)*s + omega_cart(i,3)*c
+
+          angle=atan2(ym1(i,1,1,1),x_unbent)
+          c = cos(angle)
+          s = sin(angle) 
+          or(i) =  c*or(i) + s*ot(i) 
+          ot(i) = -s*or(i) + c*ot(i) 
+        else  
+         x_unbent = xm1(i,1,1,1)
+         if (abs(bent_phi).gt.1e-10) x_unbent = x_unbent - bent_radius
+
+         angle=atan2(ym1(i,1,1,1),x_unbent)
+         c = cos(angle)
+         s = sin(angle) 
+         or(i) =  c*omega_cart(i,1) + s*omega_cart(i,2) 
+         ot(i) = -s*omega_cart(i,1) + c*omega_cart(i,2) 
+         oz(i) = omega_cart(i,3)
+        endif
       enddo 
       return
       end subroutine convert_vor
