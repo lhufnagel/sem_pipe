@@ -877,7 +877,7 @@ c
       real, intent(in) :: omega_cart(n,3)
       integer, intent(in) :: n
       integer i
-      real  x_unbent, c, s, z_unbent, angle, circumf
+      real  x_unbent, c, s, c2, s2, z_unbent, angle, circumf
 
 
       circumf = bent_radius*bent_phi
@@ -896,20 +896,29 @@ c
             z_unbent = c*zm1(i,1,1,1)/s**2.-xm1(i,1,1,1)/s
             z_unbent = z_unbent/(1.+c**2./s**2.)+circumf
             x_unbent=(xm1(i,1,1,1)+(z_unbent - circumf)*s)/c-bent_radius
+
             c = cos(-bent_phi)
             s = sin(-bent_phi)
           endif
 
           ! TODO evtl r und t hier nach vertauschen
-          or(i) = omega_cart(i,1)*c - omega_cart(i,3)*s
-          ot(i) = omega_cart(i,2)
-          oz(i) = omega_cart(i,1)*s + omega_cart(i,3)*c
+c         or(i) = omega_cart(i,1)*c - omega_cart(i,3)*s
+c         ot(i) = omega_cart(i,2)
+c         oz(i) = omega_cart(i,1)*s + omega_cart(i,3)*c
 
           angle=atan2(ym1(i,1,1,1),x_unbent)
-          c = cos(angle)
-          s = sin(angle) 
-          or(i) =  c*or(i) + s*ot(i) 
-          ot(i) = -s*or(i) + c*ot(i) 
+          c2 = cos(angle)
+          s2 = sin(angle) 
+
+c         or(i) =  c*or(i) + s*ot(i) 
+c         ot(i) = -s*or(i) + c*ot(i) 
+
+          or(i) = 
+     $  c*c2*omega_cart(i,1) + s2*omega_cart(i,2) - c2*s*omega_cart(i,3)
+          ot(i)= 
+     $  -c*s2*omega_cart(i,1) + c2*omega_cart(i,2)+omega_cart(i,3)*s*s2
+          oz(i)=
+     $  omega_cart(i,1)*s*c2  + omega_cart(i,3)*c
         else  
          x_unbent = xm1(i,1,1,1)
          if (abs(bent_phi).gt.1e-10) x_unbent = x_unbent - bent_radius
