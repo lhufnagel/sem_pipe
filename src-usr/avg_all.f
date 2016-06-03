@@ -274,9 +274,9 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         call avg1(stat(1,58),omega_t,alpha,beta,ntot,'omt',ifverbose)  ! <omt>
         call avg1(stat(1,59),omega_z,alpha,beta,ntot,'omz',ifverbose)! <omz>
 
-        call avg2(stat(1,60),omega_r,alpha,beta,ntot,'omr2',ifverbose)  ! <omr*omr> 
-        call avg2(stat(1,61),omega_t,alpha,beta,ntot,'omt2',ifverbose)  ! <omt*omt> 
-        call avg2(stat(1,62),omega_z,alpha,beta,ntot,'omz2',ifverbose)!<omz*omz> 
+        call avg2(stat(1,60),vort(1,1),alpha,beta,ntot,'omr2',ifverbose)! <omr*omr> 
+        call avg2(stat(1,61),vort(1,2),alpha,beta,ntot,'omt2',ifverbose)! <omt*omt> 
+        call avg2(stat(1,62),vort(1,3),alpha,beta,ntot,'omz2',ifverbose)!<omz*omz> 
 
 
       endif
@@ -351,15 +351,31 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      $       stat(1,51),stat(1,52),stat(1,53),
      $       stat(1,54),stat(1,55),stat(1,56))
 
-         ! vorticity is rotated above
-         call copy(stat_rot(1,57),stat(1,57),ntot);
-         call copy(stat_rot(1,58),stat(1,58),ntot);
-         call copy(stat_rot(1,59),stat(1,59),ntot);
-         call copy(stat_rot(1,60),stat(1,60),ntot);
-         call copy(stat_rot(1,61),stat(1,61),ntot);
-         call copy(stat_rot(1,62),stat(1,62),ntot);
-         
+         ! use vort as temporary array here to store negative values
+         call copy(vort(1,1),stat(1,57),ntot);
+         call copy(vort(1,2),stat(1,58),ntot);
+         call copy(vort(1,3),stat(1,59),ntot);
+         call chsign(vort(1,1),ntot);
+         call chsign(vort(1,2),ntot);
+         call chsign(vort(1,3),ntot);
+
+         call rzero(w3,lx1*ly1*lz1*lelv)
+
+         call rot_2nd(w4,w4,w4,
+     $       stat_rot(1,59),w4,w4,
+     $       stat_rot(1,58),stat_rot(1,57),w4,
+     $       w3,vort(1,3),vort(1,2),
+     $       stat(1,59),w3,vort(1,1),
+     $       stat(1,58),stat(1,57),w3)
+
+
+
+         call copy(stat(1,60),stat(1,60),ntot);
+         call copy(stat(1,61),stat(1,61),ntot);
+         call copy(stat(1,62),stat(1,62),ntot);
+
 c    4th order stats are Left out for the moment
+         ! vorticity rms is not calculated
 
 c         call rot_4th(
 c    $       stat_rot(1,35),stat_rot(1,36),stat_rot(1,37),
@@ -877,59 +893,35 @@ c
       real, intent(in) :: omega_cart(n,3)
       integer, intent(in) :: n
       integer i
-      real  x_unbent, c, s, c2, s2, z_unbent, angle, circumf
-
-
-      circumf = bent_radius*bent_phi
+      real  x_unbent, c, s, c2, s2, z_unbent, angle
 
       do i=1,nx1*ny1*nz1*nelv
         if (abs(bent_phi).gt.1e-10.and.zm1(i,1,1,1).gt.0) then
           angle = atan2(zm1(i,1,1,1),xm1(i,1,1,1))
           if (angle.le.bent_phi) then
-            c = cos(-angle)
-            s = sin(-angle)
-            z_unbent = bent_radius*angle
+            c = cos(angle)
             x_unbent=xm1(i,1,1,1)/(cos(angle))-bent_radius
           else
             c = cos(bent_phi)
             s = sin(bent_phi)
-            z_unbent = c*zm1(i,1,1,1)/s**2.-xm1(i,1,1,1)/s
-            z_unbent = z_unbent/(1.+c**2./s**2.)+circumf
-            x_unbent=(xm1(i,1,1,1)+(z_unbent - circumf)*s)/c-bent_radius
 
-            c = cos(-bent_phi)
-            s = sin(-bent_phi)
+            z_unbent = c*zm1(i,1,1,1)/s**2.-xm1(i,1,1,1)/s
+            z_unbent = z_unbent/(1.+c**2./s**2.)
+            x_unbent=(xm1(i,1,1,1)+z_unbent*s)/c-bent_radius
           endif
 
-          ! TODO evtl r und t hier nach vertauschen
-c         or(i) = omega_cart(i,1)*c - omega_cart(i,3)*s
-c         ot(i) = omega_cart(i,2)
-c         oz(i) = omega_cart(i,1)*s + omega_cart(i,3)*c
-
-          angle=atan2(ym1(i,1,1,1),x_unbent)
-          c2 = cos(angle)
-          s2 = sin(angle) 
-
-c         or(i) =  c*or(i) + s*ot(i) 
-c         ot(i) = -s*or(i) + c*ot(i) 
-
-          or(i) = 
-     $  c*c2*omega_cart(i,1) + s2*omega_cart(i,2) - c2*s*omega_cart(i,3)
-          ot(i)= 
-     $  -c*s2*omega_cart(i,1) + c2*omega_cart(i,2)+omega_cart(i,3)*s*s2
-          oz(i)=
-     $  omega_cart(i,1)*s*c2  + omega_cart(i,3)*c
         else  
          x_unbent = xm1(i,1,1,1)
          if (abs(bent_phi).gt.1e-10) x_unbent = x_unbent - bent_radius
-
-         angle=atan2(ym1(i,1,1,1),x_unbent)
-         c = cos(angle)
-         s = sin(angle) 
-         or(i) =  c*omega_cart(i,1) + s*omega_cart(i,2) 
-         ot(i) = -s*omega_cart(i,1) + c*omega_cart(i,2) 
-         oz(i) = omega_cart(i,3)
         endif
+
+        angle=atan2(ym1(i,1,1,1),x_unbent)
+        c = cos(angle)
+        s = sin(angle) 
+
+        or(i) =  c*omega_cart(i,1) + s*omega_cart(i,2)
+        ot(i) = -s*omega_cart(i,1) + c*omega_cart(i,2)
+        oz(i) = omega_cart(i,3)
       enddo 
       return
       end subroutine convert_vor

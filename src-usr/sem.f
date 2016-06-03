@@ -544,7 +544,7 @@ c     point of interest
          if (.NOT.neddy_tmp.eq.neddy) then
            write(*,*)
      $'ABORT Trying to restart from restart file with different nEddy'
-           call exitti
+           call exit
          endif
 
          read(97,*) (ex(j),j=1,neddy)  
