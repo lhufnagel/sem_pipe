@@ -84,6 +84,13 @@ c     common /hpts_i/ rcode,elid,proc
       integer inth_hpts
       save    inth_hpts
 
+
+      if (np.gt.1) then
+         write(6,*) 'Please run only on a single processor'
+         call exitt
+      endif 
+
+
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
       open(unit=20,form='unformatted',file='polar_mesh.bin')
@@ -350,6 +357,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
         write(6,*)  'Fin'
+        call exitt
       return
 
       end
