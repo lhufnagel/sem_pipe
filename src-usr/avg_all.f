@@ -9,6 +9,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
          save
 
          integer             :: nslices ! number of slices
+         real                :: tstart
          real                :: delta_time_avg 
          ! average every time interval
          integer             :: nElperFace ! number of elements per face
@@ -274,9 +275,9 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         call avg1(stat(1,58),omega_t,alpha,beta,ntot,'omt',ifverbose)  ! <omt>
         call avg1(stat(1,59),omega_z,alpha,beta,ntot,'omz',ifverbose)! <omz>
 
-        call avg2(stat(1,60),vort(1,1),alpha,beta,ntot,'omr2',ifverbose)! <omr*omr> 
-        call avg2(stat(1,61),vort(1,2),alpha,beta,ntot,'omt2',ifverbose)! <omt*omt> 
-        call avg2(stat(1,62),vort(1,3),alpha,beta,ntot,'omz2',ifverbose)!<omz*omz> 
+        call avg2(stat(1,60),omega_r,alpha,beta,ntot,'omr2',ifverbose)! <omr*omr> 
+        call avg2(stat(1,61),omega_t,alpha,beta,ntot,'omt2',ifverbose)! <omt*omt> 
+        call avg2(stat(1,62),omega_z,alpha,beta,ntot,'omz2',ifverbose)!<omz*omz> 
 
 
       endif
@@ -367,7 +368,6 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      $       w3,vort(1,3),vort(1,2),
      $       stat(1,59),w3,vort(1,1),
      $       stat(1,58),stat(1,57),w3)
-
 
 
          call copy(stat(1,60),stat(1,60),ntot);
@@ -498,12 +498,14 @@ c-----------------------------------------------------------------------
       integer ierr
 
 !     namelists
-      namelist /AVG_LIST/ nSlices,nElperFace,delta_time_avg, zslices
+      namelist /AVG_LIST/ tstart,nSlices,nElperFace,delta_time_avg, 
+     $                    zslices
 
 !-----------------------------------------------------------------------
 !     default values
 
       nSlices = 50 ! adapt this if necessary
+      tstart = 999.9
       nelperface = 256
       delta_time_avg = 1e-3
 c     zslices = (/0.,1.,2.,5.,10./)
@@ -518,6 +520,7 @@ c     zslices = (/0.,1.,2.,5.,10./)
 !     broadcast data
       call bcast(nSlices,ISIZE)
       call bcast(nelperface,ISIZE)
+      call bcast(tstart,WDSIZE)
       call bcast(delta_time_avg,WDSIZE)
       call bcast(zslices, nSlices*WDSIZE)
 
@@ -540,7 +543,8 @@ c     zslices = (/0.,1.,2.,5.,10./)
       integer ierr
 
 !     namelists
-      namelist /AVG_LIST/ nSlices,nElperFace,delta_time_avg, zslices
+      namelist /AVG_LIST/ tstart,nSlices,nElperFace,delta_time_avg, 
+     $                    zslices
 !-----------------------------------------------------------------------
       ierr=0
       if (NID.eq.0) then

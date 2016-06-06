@@ -179,8 +179,6 @@ c     Read infile
         sigmal = max(sigmal, .01*ybmax)  
         ! avoid creating too small eddies (0.01 is chosen "arbitrarly")
 
-c       sigmal = 0.5*sigmal ! make lengthscale a eddy-radius
-
         sigma_inlet(i,j,emod)     = sigmal
         umean_inlet(i,j,emod)     = vel_interp
         intensity_inlet(i,j,emod) = sqrt(2./3.*tke_interp)

@@ -4,6 +4,7 @@
  z_offset=-1, ! corresponds to upstream section, exptected to be <= 0
  /
 &AVG_LIST
+ tstart=5e-3, ! (physical) starting time (seconds) of averaging
  nSlices=11, ! upper limit of 50, adapt avg-all.f in case
  nElperFace=112,
  delta_time_avg=5e-3, ! =tstar create statistical records every (1s)+

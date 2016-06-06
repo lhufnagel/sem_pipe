@@ -11,6 +11,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
          integer             :: nslices ! number of slices
          integer             :: nElperFace ! number of elements per face
          real                :: delta_time_avg
+         real                :: tstart
          real , allocatable  :: zslices(:)
       end module AVG_read
 
@@ -32,11 +33,13 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
       integer ierr
 
 !     namelists
-      namelist /AVG_LIST/ nSlices,nElperFace,delta_time_avg, zslices
+      namelist /AVG_LIST/ tstart,nSlices,nElperFace,delta_time_avg, 
+     $                    zslices
 
 !-----------------------------------------------------------------------
 !     default values
       nSlices = 50
+      tstart = 1234.5
       allocate(zslices(nslices))
       nelperface = 256
 c     zslices = (/0.,1.,2.,5.,10./)
@@ -46,12 +49,6 @@ c     zslices = (/0.,1.,2.,5.,10./)
          read(unit=fid,nml=AVG_list,iostat=ierr)
       endif
       call err_chk(ierr,'Error reading AVG parameters.$')
-
-!     broadcast data
-      call bcast(nSlices,ISIZE)
-      call bcast(nelperface,ISIZE)
-      call bcast(delta_time_avg,WDSIZE)
-      call bcast(zslices, nSlices*WDSIZE)
 
       return
       end  subroutine AVG_param_in
@@ -72,7 +69,8 @@ c     zslices = (/0.,1.,2.,5.,10./)
       integer ierr
 
 !     namelists
-      namelist /AVG_LIST/ nSlices,nElperFace,delta_time_avg, zslices
+      namelist /AVG_LIST/ tstart,nSlices,nElperFace,delta_time_avg, 
+     $                    zslices
 !-----------------------------------------------------------------------
       ierr=0
       if (NID.eq.0) then

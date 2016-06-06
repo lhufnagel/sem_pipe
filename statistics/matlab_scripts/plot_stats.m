@@ -1,11 +1,9 @@
 %clear all;
 addpath([pwd '/unsorted'])
 
-% :-X hardcoded definitions..
-Re_tau = 180;
-%Re_tau = 1.8105409983122749E+02; % George's Reference data at this Re_tau
-ref_u_tau = 6.8322301823104711E-02;
-nu = 1/5300;
+% :-X hardcoded definitions, see George's Paper
+Re_tau = 180; nu = 1/5300; ref_u_tau = 0.0683; ref_h12 = 1.85; ref_tauws = 0.3503;
+%Re_tau = 360; nu = 1/11700; ref_u_tau = 0.0617; ref_h12 = 1.62;ref_tauws = 0.3836;
 
 u_plot_scaling = 0.08;
 rms_plot_scaling = 2;
@@ -13,10 +11,10 @@ k_plot_scaling = 100.0;
 
 
 %reference = importdata('/scratch/hufnagel/MSc/ElKhouryData/180_Re_1.dat'); % El Khoury data
-reference = importdata('../../../ElKhouryData/180_Re_1.dat'); % El Khoury data
-ref_rr_budg = importdata('../../../ElKhouryData/180_RR_Budget.dat'); % El Khoury data
-ref_tt_budg = importdata('../../../ElKhouryData/180_TT_Budget.dat'); % El Khoury data
-ref_zz_budg = importdata('../../../ElKhouryData/180_ZZ_Budget.dat'); % El Khoury data
+reference   = importdata(['../../../ElKhouryData/' num2str(Re_tau) '_Re_1.dat']); % El Khoury data
+ref_rr_budg = importdata(['../../../ElKhouryData/' num2str(Re_tau) '_RR_Budget.dat']); % El Khoury data
+ref_tt_budg = importdata(['../../../ElKhouryData/' num2str(Re_tau) '_TT_Budget.dat']); % El Khoury data
+ref_zz_budg = importdata(['../../../ElKhouryData/' num2str(Re_tau) '_ZZ_Budget.dat']); % El Khoury data
 
 ref_eps_rr = ref_u_tau^4/nu*ref_rr_budg.data(:,8);
 ref_eps_tt = ref_u_tau^4/nu*ref_tt_budg.data(:,8);
@@ -304,11 +302,11 @@ axis([min(z_vals) 1.25*max(z_vals) .5 2*Re_tau]);
 
 figure(10);
 subplot(3,1,1)
-plot(z_vals,tauws, 'x-');
+plot(z_vals,tauws/ref_tauws, 'x-');
 grid on;
 legend('\tau_{w,rms}');
 subplot(3,1,2)
-plot(z_vals,h12s, 'x-');
+plot(z_vals,h12s/ref_h12, 'x-');
 grid on;
 legend('H_{12}');
 hold on;

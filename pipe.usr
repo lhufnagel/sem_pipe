@@ -35,6 +35,7 @@ c-----------------------------------------------------------------------
 c-----------------------------------------------------------------------
 
       subroutine userchk
+        use AVG, only: tstart
       implicit none
 
       include 'SIZE_DEF'
@@ -74,9 +75,9 @@ c     -> therefore, slight discrepancy < ~ factor 2
       if (nid.eq.0) write(*,*) '||div||_max', Divmax
 
 c     output divergence (in pressure field)
-      if (mod(ISTEP,IOSTEP).eq.0.and. istep.gt.0) then
-         call outpost(vx,vy,vz,divv,t,'div')
-      endif
+c     if (mod(ISTEP,IOSTEP).eq.0.and. istep.gt.0) then
+c        call outpost(vx,vy,vz,divv,t,'div')
+c     endif
 
       ! Compute lambda_2 
 c      (stored in temperature field)
@@ -86,7 +87,7 @@ c      (stored in temperature field)
       endif
 
 
-      ! SEM
+      ! DFSEM
       tic=dnekclock()
       call synthetic_eddies
       rtime = rtime + (dnekclock()-tic)
@@ -95,13 +96,13 @@ c      (stored in temperature field)
      $  write(6,'(A,e15.4)') 'synth. eddy method time = ', rtime
 
       ! Statistics
-      if (IFCHKPTRST) then
-        if(istep.ge.1) call avg_stat_all
-      else
+
 c     Start recording at least after initial synthetic eddies 
 c     have left pipe
 c     (L/u_bulk)/dt plus tolerance
-        if(istep.ge.1) call avg_stat_all ! 100 steps
+
+      if (time.ge.tstart.and.istep.ge.1) then
+        call avg_stat_all
       endif
 
       ! Restart routines
@@ -155,7 +156,7 @@ c-----------------------------------------------------------------------
       integer, intent(in) :: ix,iy,iz,ieg
 
       integer ex
-      real vel, tmp
+      real vel, angle
 
       ! Prescribe mean inflow profile used by DFSEM as IC
 c     NOTE: The bending of the mean velocity does not look
@@ -173,10 +174,10 @@ c     the velocity maximum seems focused towards the inner wall
       if (abs(bent_phi).gt.1e-10) then
 
         if (z.gt.0) then
-          tmp = atan2(z,x)
-          if (tmp.le.bent_phi) then
-            Ux = -vel*sin(tmp)
-            Uz = vel*cos(tmp)
+          angle = atan2(z,x)
+          if (angle.le.bent_phi) then
+            Ux = -vel*sin(angle)
+            Uz = vel*cos(angle)
           else
             Ux = -vel*sin(bent_phi) 
             Uz = vel*cos(bent_phi)
