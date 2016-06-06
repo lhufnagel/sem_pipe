@@ -304,7 +304,7 @@ figure(10);
 subplot(3,1,1)
 plot(z_vals,tauws/ref_tauws, 'x-');
 grid on;
-legend('\tau_{w,rms}');
+legend('\tau_{w,rms}^+');
 subplot(3,1,2)
 plot(z_vals,h12s/ref_h12, 'x-');
 grid on;

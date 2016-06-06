@@ -301,26 +301,16 @@ C=======================================================================
 c --- generate initial eddy distribution ----
     
       if (istep.eq.0) then
-          iseed = int(dnekclock())
-          call  ZBQLINI(iseed)
+        iseed = int(dnekclock())
+        call  ZBQLINI(iseed)
 
 c     Generate eddies with locations ex,ey,ez
-          if (nid.eq.0) then
-            do i=1,neddy
-              call gen_eddy(i)
-            enddo   
-          endif
+        do i=1,neddy
+          call gen_eddy(i)
+        enddo   
       else 
-          if (nid.eq.0) then
-            call advect_recycle_eddies(neddy)
-          endif
+        call advect_recycle_eddies(neddy)
       endif
-
-c     Broadcast eddies to each processor
-      call bcast(ex,neddy*WDSIZE)
-      call bcast(ey,neddy*WDSIZE)
-      call bcast(ez,neddy*WDSIZE)
-      call bcast(eps,neddy*3*ISIZE)
 
 c     Load/Save restart files
       call SEMrestart
@@ -402,13 +392,17 @@ c     Generate eddy location randomly in bounding box (only on rank=0)
       include 'TSTEP_DEF'
       include 'TSTEP' ! ISTEP,IOSTEP
       include 'USERPAR'
+      include 'PARALLEL_DEF'
+      include 'PARALLEL'
 
       integer, intent(in) :: n
       real rnd, rho, theta
       integer j
 
 c     Generate uniformly distributed random locations 
-c     in polar coordinates (!)
+c     in polar coordinates (!) only on rank-0
+
+      if (nid.eq.0) then
 
       rho = yplus_cutoff*sqrt(rnd_loc(0.0,1.0))  
       theta = rnd_loc(0.,twoPI) 
@@ -430,6 +424,16 @@ c     in polar coordinates (!)
         if (rnd.gt.0.5) eps(j,n)=  1
         if (rnd.le.0.5) eps(j,n)= -1
       enddo
+
+      endif
+
+c     Broadcast eddy to each processor
+      call bcast(ex(n),WDSIZE)
+      call bcast(ey(n),WDSIZE)
+      call bcast(ez(n),WDSIZE)
+      call bcast(eps(1,n),ISIZE)
+      call bcast(eps(2,n),ISIZE)
+      call bcast(eps(3,n),ISIZE)
 
       return
       end subroutine gen_eddy

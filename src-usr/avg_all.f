@@ -301,6 +301,9 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
          call rot_1st(stat_rot(1,1),stat_rot(1,2),stat_rot(1,3),
      $        stat(1,1),stat(1,2),stat(1,3))
 
+         call copy(stat_rot(1,4),stat(1,4),ntot);
+         call copy(stat_rot(1,8),stat(1,8),ntot);
+
          call rot_2nd(stat_rot(1,5),stat_rot(1,9),stat_rot(1,11),
      $       stat_rot(1,9),stat_rot(1,6),stat_rot(1,10),
      $       stat_rot(1,11),stat_rot(1,10),stat_rot(1,7),
