@@ -373,9 +373,9 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      $       stat(1,58),stat(1,57),w3)
 
 
-         call copy(stat(1,60),stat(1,60),ntot);
-         call copy(stat(1,61),stat(1,61),ntot);
-         call copy(stat(1,62),stat(1,62),ntot);
+         call copy(stat_rot(1,60),stat(1,60),ntot);
+         call copy(stat_rot(1,61),stat(1,61),ntot);
+         call copy(stat_rot(1,62),stat(1,62),ntot);
 
 c    4th order stats are Left out for the moment
          ! vorticity rms is not calculated
