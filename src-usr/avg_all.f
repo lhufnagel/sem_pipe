@@ -271,13 +271,14 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         call avg5(stat(1,55),p0,duidxj,alpha,beta,ntot,'uuu') ! <dw/dy>
         call avg5(stat(1,56),p0,duidxj,alpha,beta,ntot,'vvv') ! <dw/dz>
 
+
         call avg1(stat(1,57),omega_r,alpha,beta,ntot,'omr',ifverbose)  ! <omr>
         call avg1(stat(1,58),omega_t,alpha,beta,ntot,'omt',ifverbose)  ! <omt>
-        call avg1(stat(1,59),omega_z,alpha,beta,ntot,'omz',ifverbose)! <omz>
+        call avg1(stat(1,59),omega_z,alpha,beta,ntot,'omz',ifverbose)  ! <omz>
 
-        call avg2(stat(1,60),omega_r,alpha,beta,ntot,'omr2',ifverbose)! <omr*omr> 
-        call avg2(stat(1,61),omega_t,alpha,beta,ntot,'omt2',ifverbose)! <omt*omt> 
-        call avg2(stat(1,62),omega_z,alpha,beta,ntot,'omz2',ifverbose)!<omz*omz> 
+        call avg2(stat(1,60),omega_r,alpha,beta,ntot,'omr',ifverbose)  ! <omr2>
+        call avg2(stat(1,61),omega_t,alpha,beta,ntot,'omt',ifverbose)  ! <omt2>
+        call avg2(stat(1,62),omega_z,alpha,beta,ntot,'omz',ifverbose)  ! <omz2>
 
 
       endif
@@ -348,12 +349,13 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      $       stat(1,45),stat(1,43),stat(1,47),
      $       stat(1,46),stat(1,47),stat(1,44))
 
-         call rot_2nd(stat_rot(1,48),stat_rot(1,49),stat_rot(1,50),
+        call rot_2nd(stat_rot(1,48),stat_rot(1,49),stat_rot(1,50),
      $       stat_rot(1,51),stat_rot(1,52),stat_rot(1,53),
      $       stat_rot(1,54),stat_rot(1,55),stat_rot(1,56),
      $       stat(1,48),stat(1,49),stat(1,50),
      $       stat(1,51),stat(1,52),stat(1,53),
      $       stat(1,54),stat(1,55),stat(1,56))
+
 
          ! use vort as temporary array here to store negative values
          call copy(vort(1,1),stat(1,57),ntot);
@@ -372,10 +374,26 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      $       stat(1,59),w3,vort(1,1),
      $       stat(1,58),stat(1,57),w3)
 
+         call copy(vort(1,1),stat(1,60),ntot);
+         call copy(vort(1,2),stat(1,61),ntot);
+         call copy(vort(1,3),stat(1,62),ntot);
+         call chsign(vort(1,1),ntot);
+         call chsign(vort(1,2),ntot);
+         call chsign(vort(1,3),ntot);
 
-         call copy(stat_rot(1,60),stat(1,60),ntot);
-         call copy(stat_rot(1,61),stat(1,61),ntot);
-         call copy(stat_rot(1,62),stat(1,62),ntot);
+         call rzero(w3,lx1*ly1*lz1*lelv)
+
+         call rot_2nd(w4,w4,w4,
+     $       stat_rot(1,62),w4,w4,
+     $       stat_rot(1,61),stat_rot(1,60),w4,
+     $       w3,vort(1,3),vort(1,2),
+     $       stat(1,62),w3,vort(1,1),
+     $       stat(1,61),stat(1,60),w3)
+
+
+c        call copy(stat_rot(1,60),stat(1,60),ntot);
+c        call copy(stat_rot(1,61),stat(1,61),ntot);
+c        call copy(stat_rot(1,62),stat(1,62),ntot);
 
 c    4th order stats are Left out for the moment
          ! vorticity rms is not calculated
@@ -642,6 +660,16 @@ c-----------------------------------------------------------------------
          do k=1,n
             avg(k) = alpha*avg(k) + beta*
      $     (duidxj(k,1,8)-duidxj(k,1,4))**2
+         enddo 
+      elseif (name .eq. 'oyy') then  ! <omy*omy>
+         do k=1,n
+            avg(k) = alpha*avg(k) + beta*
+     $     (duidxj(k,1,7)-duidxj(k,1,6))**2
+         enddo 
+      elseif (name .eq. 'oxx') then  ! <omx*omx>
+         do k=1,n
+            avg(k) = alpha*avg(k) + beta*
+     $     (duidxj(k,1,9)-duidxj(k,1,5))**2
          enddo 
       elseif (name .eq. 'aaa') then  ! <dw/dx*dw/dx>
          do k=1,n
