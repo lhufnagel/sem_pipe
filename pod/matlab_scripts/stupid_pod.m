@@ -1,8 +1,13 @@
-if ~exist('fname')
-  fname = '../new0.f00001';
+% read Mass matrix
+[mass_data,lr1,elmap,time,istep,fields,emode,wdsz,etag,header,status] = readnek('../mass_mat.f00000');
+if status < 0 
+  error('Could not read mass matrix');
 end
 
-%Glob files
+mass_mat = reshape(mass_data(:,:,4),[size(mass_data,1)*size(mass_data,2) 1]);
+mass_mat = [mass_mat; mass_mat; mass_mat];
+
+
 snapshots = dir('../pipe_coarse0.f*');
 if (length(snapshots) == 0)
     error('no files found')
@@ -24,7 +29,11 @@ for s=snaps
     error('Number of Elements per face wrong!')
   end
 
-  mat = [mat, reshape(data(:,:,4:6),[size(data,1)*size(data,2)*3 1])];
+  uvw = reshape(data(:,:,4:6),[size(data,1)*size(data,2)*3 1]);
+
+  uvw = (mass_mat.^(0.5)).*uvw;
+
+  mat = [mat, uvw];
 
 
   %put u,v,w into matrix: 
@@ -73,16 +82,16 @@ for s=snaps
 
 end
 
-[u,s,v] = svds(mat, nModes);
+[u,s,v] = svd(mat, 'econ');%nModes);
 
 %Plot 
-semilogy(1:nModes,diag(s).^2/sum(diag(s).^2));
+semilogy(1:nModes,diag(s(1:nModes,1:nModes)).^2/sum(diag(s).^2));
 title('Relative energy content of mode');
 
 for m=1:nModes
 
   data_new = data;
-  data_new(:,:,4:6) = reshape(u(:,m),size(data(:,:,4:6)));
+  data_new(:,:,4:6) = reshape(mass_mat.^(-0.5).*u(:,m), size(data(:,:,4:6)));
 
 % col == u(:,m)
 
@@ -93,5 +102,5 @@ for m=1:nModes
 %  data_new(k,1:nNodes,6) = u( (3*k-1)*nNodes+1 :  3*k*nNodes,m); % w
 %end
 
-  writenek(['pipe_mode0.f' num2str(m,'%05d')],data_new,lr1,elmap,time,istep,fields,emode,wdsz,etag);
+  writenek(['pipe_mode0.f' num2str(m,'%05d')],data_new,lr1,elmap,time,m-1,fields,emode,wdsz,etag);
 end
