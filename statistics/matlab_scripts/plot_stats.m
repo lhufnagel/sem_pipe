@@ -2,15 +2,15 @@
 addpath([pwd '/unsorted'])
 
 % :-X hardcoded definitions, see George's Paper
-Re_tau = 180; nu = 1/5300; ref_u_tau = 0.0683; ref_h12 = 1.85; ref_tauws = 0.3503;
-%Re_tau = 360; nu = 1/11700; ref_u_tau = 0.0617; ref_h12 = 1.62;ref_tauws = 0.3836;
+%Re_tau = 180; nu = 1/5300; ref_u_tau = 0.0683; ref_h12 = 1.85; ref_tauws = 0.3503;
+%Re_tau = 360; nu = 1/11700; ref_u_tau = 0.0617; ref_h12 = 1.62; ref_tauws = 0.3836;
+Re_tau = 550; nu = 1/19000; ref_u_tau = 0.0579; ref_h12 = 1.55; ref_tauws = 0.3981;
 
 u_plot_scaling = 0.08;
 rms_plot_scaling = 2;
 k_plot_scaling = 100.0;
 
 
-%reference = importdata('/scratch/hufnagel/MSc/ElKhouryData/180_Re_1.dat'); % El Khoury data
 reference   = importdata(['../../../ElKhouryData/' num2str(Re_tau) '_Re_1.dat']); % El Khoury data
 ref_rr_budg = importdata(['../../../ElKhouryData/' num2str(Re_tau) '_RR_Budget.dat']); % El Khoury data
 ref_tt_budg = importdata(['../../../ElKhouryData/' num2str(Re_tau) '_TT_Budget.dat']); % El Khoury data
@@ -304,11 +304,11 @@ figure(10);
 subplot(3,1,1)
 plot(z_vals,tauws/ref_tauws, 'x-');
 grid on;
-legend('\tau_{w,rms}^+');
+legend('\tau^+_{w,rms}/\tau^+_{w,rms,ref}');
 subplot(3,1,2)
 plot(z_vals,h12s/ref_h12, 'x-');
 grid on;
-legend('H_{12}');
+legend('H_{12}/H_{12,ref}');
 hold on;
 subplot(3,1,3)
 plot(z_vals,utaus/ref_u_tau, 'x-');

@@ -1,16 +1,19 @@
-ref =     importdata('180_Re_1.dat');
-rr_budg = importdata('180_RR_Budget.dat'); % El Khoury data
-tt_budg = importdata('180_TT_Budget.dat'); % El Khoury data
-zz_budg = importdata('180_ZZ_Budget.dat'); % El Khoury data
+%Re_tau = 180; nu = 1/5300; u_tau = 0.0683; 
+Re_tau = 360; nu = 1/11700; u_tau = 0.0617;
+%Re_tau = 550; nu = 1/19000; u_tau = 0.0579;
+
+ref =     importdata(['../../../ElKhouryData/' num2str(Re_tau) '_Re_1.dat']);
+rr_budg = importdata(['../../../ElKhouryData/' num2str(Re_tau) '_RR_Budget.dat']); % El Khoury data
+tt_budg = importdata(['../../../ElKhouryData/' num2str(Re_tau) '_TT_Budget.dat']); % El Khoury data
+zz_budg = importdata(['../../../ElKhouryData/' num2str(Re_tau) '_ZZ_Budget.dat']); % El Khoury data
 
 radius = 0.5;
 % Remember: George's Data was generated on Pipe with radius = 1
-nu = 1/5300 * (2.*radius); % Assuming U_bulk = 1
-
-%u_tau = 6.1746647715901784E-02;%Re_tau = 361.21...
-u_tau = 6.8322301823104711E-02; %Re_tau = 181.05..
+nu = nu * (2.*radius); % Assuming U_bulk = 1
 
 lstar = nu/u_tau;
+ltt = radius/u_tau
+tstar = nu/u_tau^2
 
 r = ref.data(:,1);
 

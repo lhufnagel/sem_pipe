@@ -2,21 +2,17 @@
 addpath([pwd '/unsorted'])
 
 % :-X hardcoded definitions..
-Re_tau = 180;
-%Re_tau = 1.8105409983122749E+02; % George's Reference data at this Re_tau
-ref_u_tau = 6.8322301823104711E-02;
-nu = 1/5300;
+Re_tau = 180; nu = 1/5300; ref_u_tau = 0.0683; ref_h12 = 1.85; ref_tauws = 0.3503;
+%Re_tau = 360; nu = 1/11700; ref_u_tau = 0.0617; ref_h12 = 1.62;ref_tauws = 0.3836;
 
 u_plot_scaling = 0.08;
 rms_plot_scaling = 2;
 k_plot_scaling = 100.0;
 
-
-%reference = importdata('/scratch/hufnagel/MSc/ElKhouryData/180_Re_1.dat'); % El Khoury data
-reference = importdata('../../../ElKhouryData/180_Re_1.dat'); % El Khoury data
-ref_rr_budg = importdata('../../../ElKhouryData/180_RR_Budget.dat'); % El Khoury data
-ref_tt_budg = importdata('../../../ElKhouryData/180_TT_Budget.dat'); % El Khoury data
-ref_zz_budg = importdata('../../../ElKhouryData/180_ZZ_Budget.dat'); % El Khoury data
+reference   = importdata(['../../../ElKhouryData/' num2str(Re_tau) '_Re_1.dat']); % El Khoury data
+ref_rr_budg = importdata(['../../../ElKhouryData/' num2str(Re_tau) '_RR_Budget.dat']); % El Khoury data
+ref_tt_budg = importdata(['../../../ElKhouryData/' num2str(Re_tau) '_TT_Budget.dat']); % El Khoury data
+ref_zz_budg = importdata(['../../../ElKhouryData/' num2str(Re_tau) '_ZZ_Budget.dat']); % El Khoury data
 
 ref_eps_rr = ref_u_tau^4/nu*ref_rr_budg.data(:,8);
 ref_eps_tt = ref_u_tau^4/nu*ref_tt_budg.data(:,8);
@@ -65,9 +61,13 @@ for file = 1:length(file_names)
   X(:,end+1) = X(:,1);
   Y(:,end+1) = Y(:,1);
 
-  var1 = squeeze(RR1(1,:,:));
-  var2 = squeeze(RR1(2,:,:));
-  var3 = squeeze(RR1(3,:,:));
+
+%  contour(X,Y,Q59,'LineWidth',2)
+%  contour(X,Y,sqrt(Q1.^2+Q2.^2),'LineWidth',2)
+
+  var1 = Q57;
+  var2 = Q58;
+  var3 = Q59;
 
   var1(:,end+1) = var1(:,1);
   var2(:,end+1) = var2(:,1);
@@ -75,29 +75,33 @@ for file = 1:length(file_names)
   
   figure(1)
 
-  subplot(ceil(sqrt(length(file_names))),ceil(sqrt(length(file_names))),file)
+  subplot(4,3,file)
   pcolor(X,Y,var1);
   shading interp;
-% caxis([0, 1.7]);
-  axis equal;
+%  contour(X,Y,var1,'LineWidth',2)
+
+% caxis([0, 1.3]);
+% axis equal;
   title(['z = ' num2str(z_vals(file)) ', [' num2str(min(var1(:))) ', ' num2str(max(var1(:))) ']']);
   
   figure(2)
 
-  subplot(ceil(sqrt(length(file_names))),ceil(sqrt(length(file_names))),file)
+% subplot(ceil(sqrt(length(file_names))),ceil(sqrt(length(file_names))),file)
+  subplot(4,3,file)
   pcolor(X,Y,var2);
   shading interp;
 % caxis([0, 1.7]);
-  axis equal;
+% axis equal;
   title(['z = ' num2str(z_vals(file)) ', [' num2str(min(var2(:))) ', ' num2str(max(var2(:))) ']']);
   
   figure(3)
 
-  subplot(ceil(sqrt(length(file_names))),ceil(sqrt(length(file_names))),file)
+  subplot(4,3,file)
+% subplot(ceil(sqrt(length(file_names))),ceil(sqrt(length(file_names))),file)
   pcolor(X,Y,var3);
 % caxis([0, 1.7]);
   shading interp;
-  axis equal;
+% axis equal;
   title(['z = ' num2str(z_vals(file)) ', [' num2str(min(var3(:))) ', ' num2str(max(var3(:))) ']']);
   
   
