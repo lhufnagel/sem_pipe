@@ -70,6 +70,7 @@ c     output mass matrix (in vx field)
       counter = 1
       write(tmp_string,'(i5.5)') counter
       oldfld = '../pipe0.f'//adjustl(trim(tmp_string))
+      newfld = './pipe_coarse0.f'//adjustl(trim(tmp_string))
       inquire(file=oldfld,exist=file_exists); 
 
       do while (file_exists)
