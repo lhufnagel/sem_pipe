@@ -44,8 +44,19 @@ c-----------------------------------------------------------------------
       character*80 tmp_string
       integer counter
 
-      new_geometry = 'new_geom.f00000'
 
+      oldfld = 'maspod0.f00001'
+      inquire(file=oldfld,exist=file_exists); 
+
+      if (.not.file_exists) then 
+c     Output mass matrix (in vx field) at same dt.
+c     NOTE: mass matrix OF NEW GEOMETRY, i.e. at first run
+        call outpost(bm1,vy,vz,pr,t,'mas')
+      endif
+
+      call nekgsync()
+
+      new_geometry = 'new_geom.f00000'
       inquire(file=new_geometry,exist=file_exists); 
 
       if (.not.file_exists) then
@@ -57,15 +68,6 @@ c-----------------------------------------------------------------------
         endif
         return
       endif
-
-c     output mass matrix (in vx field)
-      call outpost(bm1,vy,vz,pr,t,'mas')
-      call nekgsync()
-
-      newfld = 'mass_mat.f00000'
-      oldfld = 'maspod0.f00001'
-      ! grid2grid interpolation  
-      call g2gi(newfld, oldfld, new_geometry)
 
       counter = 1
       write(tmp_string,'(i5.5)') counter
