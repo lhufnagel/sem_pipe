@@ -53,6 +53,8 @@ c-----------------------------------------------------------------------
       real work1(lx1,ly1,lz1,lelv)
      $  , work2(lx1,ly1,lz1,lelv)
      $  , divm1(lx1,ly1,lz1,lelv)
+      integer ntdump
+      common /rdump/ ntdump
 
       real rtime, tic
       save rtime
@@ -81,7 +83,8 @@ c     endif
 
       ! Compute lambda_2 
 c      (stored in temperature field)
-      if (mod(ISTEP,IOSTEP).eq.0.and. istep.gt.0) then
+      if ((iostep.gt.0.and.istep.gt.0.and.mod(ISTEP,IOSTEP).eq.0).or.
+     $ (timeio.gt.0.and.time.ge.(ntdump + 1)*timeio)) then
          if (NID.eq.0) write(6,*) ISTEP,IOSTEP,TIME,' compute lambda2'
          call lambda2(t(1,1,1,1,1))
       endif
@@ -107,6 +110,13 @@ c     (L/u_bulk)/dt plus tolerance
 
       ! Restart routines
       call checkpoint
+
+      ! This call is already executed in setics()/ic.f
+      ! However, it has the wrong time time-value (=0.0) 
+      ! when using our restarting, which initializes 'time' 
+      if (istep.eq.0.and.timeio.ne.0.0)  then
+        ntdump = int( (time+1e-14)/timeio )
+      endif
 
       end
 

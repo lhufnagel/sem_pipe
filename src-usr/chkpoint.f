@@ -446,6 +446,9 @@ c       .nfldi is the number of rs files to save before overwriting
       save    icalld
       data    icalld  /0/
 
+      integer ntdump
+      common /rdump/ ntdump
+
       integer i2, iosav, iotest, iwdsizo, m1, mfld, mt
       integer nfld, nfld2, npscal1
       real p66
@@ -507,6 +510,10 @@ c     save perturbation
             call outpost2(vxp(1,1),vyp(1,1),vzp(1,1),prp(1,1),tp(1,1,1)
      $           ,npscal1,prefix) ! perturbation
          else                   ! DNS
+            if(time .ge. (ntdump + 1) * timeio) then
+              ntdump = ntdump - 1
+            endif
+
             call outpost2(vx,vy,vz,pr,t,npscal1,prefix) ! basefield
          endif
 
