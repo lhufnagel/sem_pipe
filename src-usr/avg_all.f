@@ -1437,7 +1437,7 @@ c-----------------------------------------------------------------------
         endif
 
         ! numerical precission
-          if (abs(z_val - z_unbent).lt.1e-10) then
+          if (abs(z_val - z_unbent).lt.1e-6) then
             do k=1,ly1
               do j=1,lx1
                 stat_xy(j,k,ex,n) = stat3d(j,k,1,e,n)

@@ -35,15 +35,17 @@ end
 [u,s,v] = svd(mat, 'econ');
 
 %Plot 
-figure(1);
+h=figure('visible','off');
 semilogy(1:length(s),diag(s));
 title('Singular values');
+saveas(h,'singular_values','fig');
 
 time_coeffs = s*v';
-figure(2);
+h=figure('visible','off');
 plot(time_coeffs(1:4,:)');
 title('Time coefficients');
 legend(['1';'2';'3';'4']);
+saveas(h,'time_coeffs','fig');
 
 for m=1:nModes
 
