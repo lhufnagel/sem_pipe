@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -l
 
 #distributed computing toolbox does not seem to be in 2015b
 #module load matlab/r2015a    THIS FAILS WITH LICENSE ISSUES!
@@ -6,7 +6,7 @@ module load matlab/r2014b
 
 ## !! execute on /cfs/klemming/..  !!
 
-nohup matlab -nosplash -nodesktop << EOF > log.txt &
+nohup matlab -nosplash -nodesktop << EOF > submit_log.txt &
 configCluster
 
 % Configure job: email, memory, partition, Project name...
