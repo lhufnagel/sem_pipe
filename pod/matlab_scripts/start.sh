@@ -25,8 +25,8 @@ c=parcluster;
 j = c.batch('pod');
 
 % Wait for the job to finish before fetching results
-j.wait 
-
+%j.wait 
+pause(3*3600); %the line above did not work..
 
 %c.getDebugLog(j.Tasks(1)) is sometimes helpful helpful..
 
