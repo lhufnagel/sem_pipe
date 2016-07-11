@@ -1424,7 +1424,7 @@ c-----------------------------------------------------------------------
 
         z_unbent = zm1(1,1,1,e)
 
-        if (abs(bent_phi).gt.1e-10) then
+        if (abs(bent_phi).gt.1e-6) then
           if (zm1(1,1,1,e).gt.0) then
             angle = atan2(zm1(1,1,1,e),xm1(1,1,1,e))
             if (angle.le.bent_phi) then

@@ -29,6 +29,7 @@ for s=snaps
   uvw = reshape(data(:,:,4:6),[size(data,1)*size(data,2)*3 1]);
 
   uvw = (mass_mat.^(0.5)).*uvw;
+  disp(['energy/volume ' num2str(uvw'*uvw*3/sum(mass_mat))]);
   mat = [mat, uvw];
 end
 
