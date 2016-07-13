@@ -1,0 +1,151 @@
+c-----------------------------------------------------------------------
+c     Turbulent pipe flow 
+c     Along (positive) z-direction
+c     
+c     Calculate streamfunctions
+c
+c     Lorenz Hufnagel, hufnagel@kth.se
+c-----------------------------------------------------------------------
+
+      subroutine uservp (ix,iy,iz,ieg)
+      return
+      end
+
+c-----------------------------------------------------------------------
+
+      subroutine userf  (ix,iy,iz,ieg)
+      return
+      end
+
+c-----------------------------------------------------------------------
+
+      subroutine userq  (ix,iy,iz,ieg)
+      return
+      end
+
+c-----------------------------------------------------------------------
+
+      subroutine userchk
+      implicit none
+
+      include 'SIZE_DEF'
+      include 'SIZE'  ! L[XYZ]1,LELV,NID
+      include 'INPUT_DEF'
+      include 'INPUT' ! param
+      include 'MASS_DEF'
+      include 'MASS'  !  bm1
+      include 'SOLN_DEF'      
+      include 'SOLN'  ! V[XYZ],V[XYZ]P
+      include 'GEOM_DEF'      
+      include 'GEOM'  ! V[XYZ],V[XYZ]P
+      include 'PARALLEL_DEF'
+      include 'PARALLEL'  ! nelgt
+
+
+      real dummy1(lx1,ly1,lz1,lelv)
+      real dummy2(lx1,ly1,lz1,lelv)
+      real vorticity(lx1,ly1,lz1,lelv)
+      real phi(lx1,ly1,lz1,lelv)
+      real h1(lx1,ly1,lz1,lelv)
+      real h2(lx1,ly1,lz1,lelv)
+      real rhs(lx1,ly1,lz1,lelv)
+
+      integer i,j,e,n, maxit
+      real toler, p22
+      real circ
+      
+      n = nelv*lx1*ly1*lz1
+
+      if (np.gt.1) then
+         write(6,*) 'Please run only on a single processor'
+         call exitt
+      endif 
+c
+c     Compute streamfunction phi for a 2D velocity field with
+c     all Dirichlet boundary conditions (i.e. phi=0 along all boundaries)
+c
+c     Solve the Poisson equation \/^2 phi = -w
+c     with w the vorticity.
+c
+c     initialize the vectors to zero
+      call rzero(vorticity,n)
+c     compute vorticity
+      call comp_vort3(vorticity,dummy1,dummy2,vx,vy,vz)                                                    
+      call chsign(vorticity,n)
+c     multiply with the mass matrix
+      call col3(rhs,vorticity,bm1,n)
+c     setup Poisson problem: h2=0, h1=1
+      call rzero(h2,n)
+      call rone(h1,n)
+c     set solver tolerance
+      toler = 1e-14
+      p22 = param(22)
+      param(22) = toler
+      maxit = 10000      
+c     Solve Poisson equation:    
+      call hmholtz('PHI ',phi,rhs,h1,h2,v2mask,vmult,1,
+     $     toler,maxit,1)
+c     reset tolerance
+      param(22) = p22
+
+      circ = 0.
+      do e=1,nelv
+        do j=1,ly1
+          do i=1,lx1
+            circ = circ + area(i,j,5,e)*vorticity(i,j,1,e)
+          enddo
+        enddo
+      enddo
+
+      write(6,*) 'Circulation: ', circ
+
+c     output streamfunction phi
+      call outpost(phi,vorticity,vz,pr,t,'stf')
+c     output normal velocity field
+      call outpost(vx,vy,vz,pr,t,'   ')
+      
+      call exitt()
+
+      end
+
+c-----------------------------------------------------------------------
+
+      subroutine userbc (ix,iy,iz,iside,ieg)
+      return
+      end
+
+c-----------------------------------------------------------------------
+
+      subroutine useric (ix,iy,iz,ieg)
+      return
+      end
+
+c-----------------------------------------------------------------------
+
+      subroutine usrdat
+        implicit none
+      return
+      end
+
+c-----------------------------------------------------------------------
+
+      subroutine usrdat2
+        implicit none
+      include 'SIZE_DEF'
+      include 'SIZE' ! nelv
+      include 'INPUT_DEF'
+      include 'INPUT' 
+      ! TODO NECESSARY
+      param(59) = 1. ! 1 = deformed mesh
+
+      return
+      end
+
+c-----------------------------------------------------------------------
+
+      subroutine usrdat3
+        implicit none
+      return
+      end
+
+c------------------------------------------------------------------------
