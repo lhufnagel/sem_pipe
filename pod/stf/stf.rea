@@ -1731,8 +1731,7 @@
  W  176  3   180.000       1.00000       0.00000       0.00000       0.00000    
  E  176  4   175.000       2.00000       0.00000       0.00000       0.00000    
   ***** NO THERMAL BOUNDARY CONDITIONS *****
-   1 PRESOLVE/RESTART OPTIONS  *****
-slab_mode0.f00001
+   0 PRESOLVE/RESTART OPTIONS  *****
    7         INITIAL CONDITIONS *****
 C Default
 C Default
