@@ -54,7 +54,7 @@ c-----------------------------------------------------------------------
       real h2(lx1,ly1,lz1,lelv)
       real rhs(lx1,ly1,lz1,lelv)
 
-      integer i,j,e,n, maxit
+      integer i,j,e,n, maxit, counter
       real toler, p22
       real circ
       
@@ -83,7 +83,7 @@ c
 c     initialize the vectors to zero
       call rzero(vorticity,n)
 c     compute vorticity
-      call comp_vort3(vorticity,dummy1,dummy2,vx,vy,vz)                                                    
+      call comp_vort3(vorticity,dummy1,dummy2,vx,vy,vz) 
       call chsign(vorticity,n)
 c     multiply with the mass matrix
       call col3(rhs,vorticity,bm1,n)
