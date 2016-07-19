@@ -71,13 +71,25 @@ c     NOTE: mass matrix OF NEW GEOMETRY, i.e. at first run
 
       counter = 1
       write(tmp_string,'(i5.5)') counter
-      oldfld = '../pipe0.f'//adjustl(trim(tmp_string))
       newfld = './pipe_coarse0.f'//adjustl(trim(tmp_string))
       inquire(file=oldfld,exist=file_exists); 
 
       do while (file_exists)
 
+        counter = counter + 1
+        write(tmp_string,'(i5.5)') counter
+        newfld = './pipe_coarse0.f'//adjustl(trim(tmp_string))
+        inquire(file=newfld,exist=file_exists); 
 
+      end do
+
+      if (counter.gt.1.and.nid.eq.0) write(*,*) 
+     $  'Found existing interpolated fields up to ', newfld
+
+      oldfld = '../pipe0.f'//adjustl(trim(tmp_string))
+      inquire(file=oldfld,exist=file_exists); 
+
+      do while (file_exists)
         call g2gi(newfld, oldfld, new_geometry) ! grid2grid interpolation  
 
         counter = counter + 1
@@ -88,6 +100,9 @@ c     NOTE: mass matrix OF NEW GEOMETRY, i.e. at first run
         inquire(file=oldfld,exist=file_exists); 
 
       end do
+
+      if (nid.eq.0) write(*,*) 
+     $  'The end.'
 
       call exitt() 
       end
