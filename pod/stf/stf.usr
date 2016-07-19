@@ -42,6 +42,10 @@ c-----------------------------------------------------------------------
       include 'PARALLEL'  ! nelgt
 
 
+      character*132  fname
+      character*80 tmp_string
+      logical file_exists
+
       real dummy1(lx1,ly1,lz1,lelv)
       real dummy2(lx1,ly1,lz1,lelv)
       real vorticity(lx1,ly1,lz1,lelv)
@@ -66,6 +70,15 @@ c     all Dirichlet boundary conditions (i.e. phi=0 along all boundaries)
 c
 c     Solve the Poisson equation \/^2 phi = -w
 c     with w the vorticity.
+
+      counter = 1
+      write(tmp_string,'(i5.5)') counter
+      fname = '../slab_mode0.f'//adjustl(trim(tmp_string))
+      inquire(file=fname,exist=file_exists); 
+
+      do while (file_exists)
+
+      call load_fld(fname)
 c
 c     initialize the vectors to zero
       call rzero(vorticity,n)
@@ -101,8 +114,13 @@ c     reset tolerance
 
 c     output streamfunction phi
       call outpost(phi,vorticity,vz,pr,t,'stf')
-c     output normal velocity field
-      call outpost(vx,vy,vz,pr,t,'   ')
+
+      counter = counter + 1
+      write(tmp_string,'(i5.5)') counter
+      fname = '../slab_mode0.f'//adjustl(trim(tmp_string))
+      inquire(file=fname,exist=file_exists); 
+
+      enddo
       
       call exitt()
 
