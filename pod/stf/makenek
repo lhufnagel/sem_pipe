@@ -22,7 +22,7 @@ fi
 
 # pre-processor symbol list 
 # (set PPLIST=? to get a list of available symbols)
-PPLIST="MPIIO" 
+PPLIST="" 
 
 # plug-in list
 PLUGIN_LIST=""
