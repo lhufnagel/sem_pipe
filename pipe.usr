@@ -212,12 +212,21 @@ c-----------------------------------------------------------------------
       include 'SIZE' ! nelv
       include 'INPUT_DEF' 
       include 'INPUT' ! [xyz]c
+      include 'TSTEP_DEF'
+      include 'TSTEP' ! ISTEP,IOSTEP
       include 'USERPAR' 
+      include 'CHKPOINT'
 
       real ymax
 
       ! Read user module parameters
       call uprm_read
+
+      if (.not.CHKPTSTEP.eq.IOSTEP) then
+         if (NID.eq.0) write(6,*) 
+     $ '!!!Warning!!! It is recommended to run with IOSTEP ==CHKPTSTEP'
+      ! To obtain time-equidistnat POD snapshots across restarts
+      endif
 
       ! Initialize DFSEM variables
       
