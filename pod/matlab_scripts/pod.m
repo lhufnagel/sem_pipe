@@ -125,6 +125,7 @@ plot(time_coeffs(1:4,:)');
 title('Time coefficients');
 legend(['1';'2';'3';'4']);
 saveas(h,'time_coeffs_sym','fig');
+save('time_coeffs_sym.mat','time_coeffs');
 
 for m=1:nModes
 

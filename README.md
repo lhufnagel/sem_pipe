@@ -17,7 +17,7 @@ The DFSEM is implemented to generate divergence-free, nonuniform, isotropic turb
 As of now, the DFSEM is only implemented to generate a turbulent signal in z-positive direction. It should however be straightforward to change the relevant code (x-positive SEM was before [commit c820c3](../../commit/c820c3d9f9ae82491efa70bcbb80dae23970e9b5) ). The first elements in the mesh need to be the face, at which the DFSEM inflow is placed. This enables us to precompute eddy-size once for the whole simulation (using linear interpolation from `sem_input.txt`) instead of recomputing the eddy-sizes at each time step. An unoptmized version without this limitation is found in [commit aaa095](../../commit/aaa095)  
 
 ## Workflow
-* Create a cartesian pipe-mesh with positive z as downstream-direction. Typically, the mesh generator [pipeMeshNek by Jacopo](https://bitbucket.org/jacopo-canton/pipemeshnek) was used  
+* Create a cartesian pipe-mesh with positive z as downstream-direction. Typically, the mesh generator [pipeMeshNek by Jacopo](https://github.com/jcanton/pipeMeshNek) was used  
 This will yield files `base.rea, base2d.rea`. The first one contains the actual mesh, the latter one a single pipe crosssectionial face, i.e. it contains `nElInlet` 2d elements. It is required for the averaging/statistics code.
 
 * run `reatore2, genmap, makenek`
@@ -26,6 +26,11 @@ This will yield files `base.rea, base2d.rea`. The first one contains the actual 
 ###Statistics 
 * generate a (2D) crossectional pipe-face in polar coordinates using Matlab script `statistics/matlab_scripts/generate_polar_mesh.m`. Nek in postproc-mode will interpolate the time-averaged statistics onto this  
 * compile and run `stats.usr`-nek5000 in subfolder `statistics`, using `base2d.rea` as `stats.rea` 
-* Run Matlab script `statistics/matlab_scripts/plot_stats.m` to evaluate stastics
+* Run Matlab script `statistics/matlab_scripts/plot_stats.m` to evaluate stastics. 
+
+###POD
+* (Optional, but recommended:) Generate a coarsened version of the pipe mesh. Nek in postproc-mode will interpolate the fine snapshots (grid2grid, as explained in the nek5000-Documentation)
+* Matlab script `pod/matlab_scripts/pod.m` performs the POD. Adapt the code, in case you do not want to use mirrored snapshots.
+* The folder `pod/matlab_scripts/` holds a few more Matlab scripts, e.g. to extract a 2D-Slice, or plotting streamlines
 
 Lorenz Hufnagel, hufnagel@kth.se
