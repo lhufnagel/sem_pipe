@@ -152,7 +152,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C
 
            do while (file_exists)
 
-           write(pippo,'(F7.3, A, i4.4)') zslices(1), '_',  indts+1
+           write(pippo,'(F7.3, A, i8.8)') zslices(1), '_',  indts+1
            inputname1 = 'statistics/recordings/stat_z_'//
      $    adjustl(trim(pippo))
 
@@ -421,7 +421,7 @@ C ------------------------------------------------------------------------------
 C ------------ Write statistics to file ----------------------------------------- C
 C ------------------------------------------------------------------------------- C
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%C 
-        write(pippo,'(F7.3, A, i4.4)') zslices(k), '_',  indts
+        write(pippo,'(F7.3, A, i8.8)') zslices(k), '_',  indts
 
         inputname1 = 'statistics/recordings/stat_z_'//
      $    adjustl(trim(pippo))
