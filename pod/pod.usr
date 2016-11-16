@@ -72,7 +72,7 @@ c     NOTE: mass matrix OF NEW GEOMETRY, i.e. at first run
       counter = 1
       write(tmp_string,'(i5.5)') counter
       newfld = './pipe_coarse0.f'//adjustl(trim(tmp_string))
-      inquire(file=oldfld,exist=file_exists); 
+      inquire(file=newfld,exist=file_exists); 
 
       do while (file_exists)
 
